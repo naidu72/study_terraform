@@ -1,0 +1,49 @@
+terraform.tfvars          root variables.tf        root main.tf
+────────────────          ─────────────────        ────────────
+nginx_version = "stable"  variable "nginx_version" image = "nginx:${var.nginx_version}"
+      │                         │                        │
+      └──────────────────────── ┘                        │
+                                                         │ resolves to
+                                                         ▼
+                                                   "nginx:stable"
+                                                         │
+                                                         │ passed into module
+                                                         ▼
+                                          modules/docker-service/variables.tf
+                                          variable "image" { type = string }
+                                                         │
+                                                         │ now available as
+                                                         ▼
+                                          modules/docker-service/main.tf
+                                          data "docker_image" "this" {
+                                            name = var.image  → "nginx:stable"
+                                          }
+------------------------------------------------------
+terraform apply
+      │
+      ▼
+1. reads all root .tf files
+      │
+      ▼
+2. resolves root variables → locals → provider
+      │
+      ▼
+3. builds full dependency graph across root + all modules
+      │
+      ▼
+4. executes in dependency order:
+      │
+      ├── docker_network.app          (root resource, no dependencies)
+      │         │
+      │         ▼
+      ├── module.nginx                (depends on docker_network.app)
+      │   └── reads all module .tf files
+      │       ├── docker_image.this   (pull nginx:stable)
+      │       └── docker_container    (create container)
+      │
+      ├── module.postgres             (parallel with module.nginx)
+      │   └── reads all module .tf files
+      │       ├── docker_image.this   (pull postgres:15)
+      │       └── docker_container    (create container)
+      │
+      └── root outputs.tf             (runs last, after everything exists)
