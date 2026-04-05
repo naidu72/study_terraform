@@ -21,6 +21,7 @@ output "network_id" {
 
 output "container_ids" {
   description = "Map of container names to IDs"
+  sensitive   = true
   value = {
     nginx    = module.nginx.container_id
     postgres = module.postgres.container_id
@@ -29,6 +30,7 @@ output "container_ids" {
 
 output "container_names" {
   description = "Map of container names"
+  sensitive   = true
   value = {
     nginx    = module.nginx.container_name
     postgres = module.postgres.container_name

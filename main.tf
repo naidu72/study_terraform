@@ -47,6 +47,7 @@ module "postgres" {
 output "postgres_url"{ value = module.postgres.url }
 
 output "all_containers" {
+  sensitive = true
   value = {
     nginx    = module.nginx.container_id
     postgres = module.postgres.container_id
