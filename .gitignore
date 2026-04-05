@@ -1,0 +1,13 @@
+# Terraform state — never commit these
+*.tfstate
+*.tfstate.backup
+.terraform/
+.terraform.lock.hcl
+
+# Sensitive var files
+*.tfvars
+!example.tfvars    # allow the example template only
+
+# Crash logs
+crash.log
+crash.*.log
