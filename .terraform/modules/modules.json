@@ -1,0 +1,1 @@
+{"Modules":[{"Key":"","Source":"","Dir":"."},{"Key":"nginx","Source":"./modules/docker-service","Dir":"modules/docker-service"},{"Key":"postgres","Source":"./modules/docker-service","Dir":"modules/docker-service"}]}
