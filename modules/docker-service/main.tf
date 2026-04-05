@@ -7,10 +7,8 @@ terraform {
   }
 }
 
-# ── Phase 1: locals inside the module ─────────────────────────
-# These are internal — callers never see or set them directly
+# ── locals inside the module ───────────────────────────────────
 locals {
-  # Consistent label set stamped on every container this module creates
   labels = {
     environment = var.env
     managed_by  = "terraform"
@@ -18,47 +16,75 @@ locals {
   }
 }
 
-# ── Phase 1: data source — read the image, don't manage it ────
+# ── data source — read the image, don't manage it ─────────────
 data "docker_image" "this" {
   name = var.image
-  # "this" is the convention for single-resource modules
 }
 
-# ── Phase 2: the single resource the module wraps ─────────────
-resource "docker_container" "this" {
-  name   = var.name
-  image  = data.docker_image.this.image_id
+# ── protected = true (prod) ────────────────────────────────────
+# prevent_destroy must be a static literal — Terraform language constraint.
+# var.protected controls which of the two resources below gets count = 1.
+resource "docker_container" "protected" {
+  count = var.protected ? 1 : 0
+
+  name  = var.name
+  image = data.docker_image.this.repo_digest
 
   ports {
     internal = var.internal_port
     external = var.external_port
   }
-
   networks_advanced {
     name = var.network_name
   }
-
-  # Convert env_vars map → ["KEY=value", ...] list Docker expects
   env = [for k, v in var.env_vars : "${k}=${v}"]
-
-  labels {
-    for_each = local.labels   # stamp every label from locals
-    label    = each.key
-    value    = each.value
+  dynamic "labels" {
+    for_each = local.labels
+    content {
+      label = labels.key
+      value = labels.value
+    }
   }
-
-  # ── Phase 1: lifecycle rules ───────────────────────────────
   lifecycle {
-    # New container created before old one is destroyed —
-    # avoids a gap where the port is unavailable
     create_before_destroy = true
-
-    # External tooling (health checkers, orchestrators) may
-    # update labels — we don't want Terraform to fight that
-    ignore_changes = [labels]
-
-    # Only active when caller passes protected = true
-    # Prevents accidental destroy in prod
-    prevent_destroy = var.protected
+    ignore_changes        = [labels]
+    prevent_destroy       = true      # static literal — protected path
   }
 }
+
+# ── protected = false (non-prod) ───────────────────────────────
+resource "docker_container" "unprotected" {
+  count = var.protected ? 0 : 1
+
+  name  = var.name
+  image = data.docker_image.this.repo_digest
+
+  ports {
+    internal = var.internal_port
+    external = var.external_port
+  }
+  networks_advanced {
+    name = var.network_name
+  }
+  env = [for k, v in var.env_vars : "${k}=${v}"]
+  dynamic "labels" {
+    for_each = local.labels
+    content {
+      label = labels.key
+      value = labels.value
+    }
+  }
+  lifecycle {
+    create_before_destroy = true
+    ignore_changes        = [labels]
+    prevent_destroy       = false     # static literal — unprotected path
+  }
+}
+
+# ── single reference for outputs ──────────────────────────────
+# Collapses the two resources back into one so outputs.tf and
+# any other module internals don't need to branch on var.protected
+locals {
+  container = var.protected ? one(docker_container.protected) : one(docker_container.unprotected)
+}
+
