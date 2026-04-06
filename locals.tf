@@ -3,8 +3,6 @@ locals {
   # Computed once here, referenced everywhere else
   name_prefix   = "${var.env}-${var.project}" # dev-homelab
   network_name  = "${local.name_prefix}-net"  # dev-homelab-net
-  nginx_name    = "${local.name_prefix}-nginx" #dev-homelab-nginx
-  postgres_name = "${local.name_prefix}-postgres"
 
   # Fake FQDN used in nginx env config
   app_fqdn = "${var.project}.${var.env}.local"  #homelab.
@@ -32,3 +30,4 @@ locals {
     local.docker_hosts["default"]
   )
 }
+

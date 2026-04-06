@@ -1,53 +1,30 @@
-# outputs.tf
-# docker_container.nginx and docker_container.postgres no longer exist
-# in root — they are now inside modules. Access via module.nginx and
-# module.postgres which proxy through the module's outputs.tf.
-
-output "nginx_url" {
-  description = "URL to reach nginx"
-  value       = module.nginx.url
+# All service URLs as a map: { nginx = "http://localhost:8080", ... }
+output "service_urls" {
+  description = "URL for every deployed service"
+  value = {
+    for name, svc in module.service : name => svc.url
+  }
 }
 
-output "postgres_connection" {
-  description = "Postgres connection string"
-  value       = "postgresql://${var.db_user}@localhost:${var.postgres_port}/${var.db_name}"
-  # password deliberately excluded from output
-}
-
-output "network_id" {
-  description = "Docker network ID"
-  value       = docker_network.app.id
-}
-
+# All container IDs as a map
 output "container_ids" {
-  description = "Map of container names to IDs"
-  # sensitive   = true
+  description = "Docker container ID for each service"
   value = {
-    # nginx    = module.nginx.container_id
-    # postgres = module.postgres.container_id
-    nginx    = nonsensitive(module.nginx.container_id)
-    postgres = nonsensitive(module.postgres.container_id)
+    for name, svc in module.service : name => svc.container_id
   }
 }
 
-output "container_names" {
-  description = "Map of container names"
-  #sensitive   = true
-  value = {
-   # nginx    = module.nginx.container_name
-   # postgres = module.postgres.container_name
-    nginx    = nonsensitive(module.nginx.container_name)
-    postgres = nonsensitive(module.postgres.container_name)
-  }
+# The shared network
+output "network_name" {
+  value = module.network.network_name
 }
 
-output "environment_summary" {
-  description = "Human-readable summary of what was deployed"
+# Handy summary printed after apply
+output "summary" {
   value = {
-    env         = var.env
-    project     = var.project
-    name_prefix = local.name_prefix
-    is_prod     = local.is_prod
+    environment  = var.env
+    network      = module.network.network_name
+    service_count = length(module.service)
+    urls         = { for n, s in module.service : n => s.url }
   }
 }
-
