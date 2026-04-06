@@ -3,7 +3,7 @@
 *.tfstate.backup
 .terraform/
 .terraform.lock.hcl
-
+backends/
 # Sensitive var files
 *.tfvars
 !example.tfvars    # allow the example template only

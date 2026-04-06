@@ -8,11 +8,12 @@ variable "env" {
     error_message = "env must be dev, staging, or prod."
   }
 }
-variable "docker_host" {
-  type        = string
-  description = "dokcer engine"
-  default     = "unix:///mnt/wsl/shared-docker/docker.sock"
-}
+# variable "docker_host" {  ## we have moved from hard coded logic to locals.tf L22 to L33 this will pick based on the workspace
+#   type        = string
+#   description = "dokcer engine"
+#   #default     = "ssh://naidu@pi"
+#   default     = "unix:///mnt/wsl/shared-docker/docker.sock"
+# }
 variable "project" {
   type        = string
   description = "Project name — used in all resource names"

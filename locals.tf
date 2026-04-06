@@ -19,4 +19,16 @@ locals {
   # Derived: is this a production-grade env?
   #is_prod = var.env == "prod"
   is_prod = terraform.workspace == "prod"
+  ## this where we make to pickup docker host 
+  docker_hosts = {
+    wsl     = "unix:///mnt/wsl/shared-docker/docker.sock"
+    pi      = "ssh://naidu@pi"
+    default = "unix:///var/run/docker.sock"
+  }
+
+  docker_host = lookup(
+    local.docker_hosts,
+    terraform.workspace,
+    local.docker_hosts["default"]
+  )
 }

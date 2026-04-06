@@ -18,7 +18,7 @@ module "nginx" {
   protected     = var.env == "prod"      # true only in prod
 
   env_vars = {
-    NGINX_HOST = local.app_fqdn
+    NGINX_HOST = local.app_fqdn #homelab.dev
     NGINX_PORT = "80"
   }
 }

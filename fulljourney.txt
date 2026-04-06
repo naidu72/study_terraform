@@ -18,7 +18,7 @@ nginx_version = "stable"  variable "nginx_version" image = "nginx:${var.nginx_ve
                                           data "docker_image" "this" {
                                             name = var.image  → "nginx:stable"
                                           }
-------------------------------------------------------
+------------------------------------------------------ this will talk about how the modules from the root main.tf------------
 terraform apply
       │
       ▼
@@ -47,3 +47,53 @@ terraform apply
       │       └── docker_container    (create container)
       │
       └── root outputs.tf             (runs last, after everything exists)
+-------------------------------------- this will talk about how the workspace will help to diffrance at enviroment and tfstate for each env------------------------------
+terraform workspace select wsl
+         │
+         ▼
+state path → tf-state/env:/wsl/phase1-project/terraform.tfstate  (auto)
+docker host → unix:///mnt/wsl/shared-docker/docker.sock          (from local)
+         │
+         ▼
+terraform apply -var-file="terraform.tfvars"
+         │
+         ├── creates containers on WSL Docker
+         └── saves state to MinIO wsl path
+
+terraform workspace select pi
+         │
+         ▼
+state path → tf-state/env:/pi/phase1-project/terraform.tfstate   (auto)
+docker host → ssh://naidu@pi                                      (from local)
+         │
+         ▼
+terraform apply -var-file="terraform.tfvars"
+         │
+         ├── creates containers on Pi Docker
+         └── saves state to MinIO pi path 
+----------------------------------------- how lookup works ------------------------------------------
+terraform workspace select wsl
+         │
+         ▼
+terraform.workspace = "wsl"         ← Terraform built-in, always available
+         │
+         ▼
+locals {
+  docker_hosts = { wsl = "...", pi = "...", default = "..." }
+         │
+         ▼
+  docker_host = lookup(local.docker_hosts, "wsl", fallback)
+         │
+         │  key "wsl" found in map
+         ▼
+  docker_host = "unix:///mnt/wsl/shared-docker/docker.sock"
+}
+         │
+         ▼
+provider "docker" {
+  host = local.docker_host
+       = "unix:///mnt/wsl/shared-docker/docker.sock"
+}
+         │
+         ▼
+all docker_container resources connect via WSL socket
