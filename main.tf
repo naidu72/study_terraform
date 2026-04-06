@@ -9,11 +9,11 @@ resource "docker_network" "app" {
 module "nginx" {
   source = "./modules/docker-service"
 
-  name          = local.nginx_name       # from root locals.tf
-  image         = "nginx:${var.nginx_version}"
+  name          = local.nginx_name       # from root locals.tf  dev-homelab-nginx(this from local.tf)
+  image         = "nginx:${var.nginx_version}" # nginx:stable veriable.tf L22 to L25
   internal_port = 80
   external_port = var.nginx_port
-  network_name  = docker_network.app.name
+  network_name  = docker_network.app.name #dev-homelab-net
   env           = var.env
   protected     = var.env == "prod"      # true only in prod
 
