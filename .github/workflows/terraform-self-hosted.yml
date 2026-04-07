@@ -70,15 +70,16 @@ jobs:
 
       - name: Configure Local Backend (CI/CD Override)
         run: |
-          # Override S3 backend with local backend for CI/CD
-          cat > backend-override.tf << 'BACKEND_EOF'
+          # Backup and replace S3 backend with local backend for CI/CD
+          mv backend.tf backend.tf.bak
+          cat > backend.tf << 'BACKEND_EOF'
           terraform {
             backend "local" {
               path = "terraform-pi.tfstate"
             }
           }
           BACKEND_EOF
-          echo "✅ Backend override created (using local state for CI/CD)"
+          echo "✅ Backend replaced with local backend for CI/CD"
 
       - name: Terraform Init
         run: terraform init -reconfigure
@@ -133,15 +134,16 @@ jobs:
 
       - name: Configure Local Backend (CI/CD Override)
         run: |
-          # Override S3 backend with local backend for CI/CD
-          cat > backend-override.tf << 'BACKEND_EOF'
+          # Backup and replace S3 backend with local backend for CI/CD
+          mv backend.tf backend.tf.bak
+          cat > backend.tf << 'BACKEND_EOF'
           terraform {
             backend "local" {
               path = "terraform-wsl.tfstate"
             }
           }
           BACKEND_EOF
-          echo "✅ Backend override created (using local state for CI/CD)"
+          echo "✅ Backend replaced with local backend for CI/CD"
 
       - name: Terraform Init
         run: terraform init -reconfigure
@@ -205,15 +207,16 @@ jobs:
 
       - name: Configure Local Backend (CI/CD Override)
         run: |
-          # Override S3 backend with local backend for CI/CD
-          cat > backend-override.tf << 'BACKEND_EOF'
+          # Backup and replace S3 backend with local backend for CI/CD
+          mv backend.tf backend.tf.bak
+          cat > backend.tf << 'BACKEND_EOF'
           terraform {
             backend "local" {
               path = "terraform-pi.tfstate"
             }
           }
           BACKEND_EOF
-          echo "✅ Backend override created (using local state for CI/CD)"
+          echo "✅ Backend replaced with local backend for CI/CD"
 
       - name: Terraform Init
         run: terraform init -reconfigure
@@ -270,15 +273,16 @@ jobs:
 
       - name: Configure Local Backend (CI/CD Override)
         run: |
-          # Override S3 backend with local backend for CI/CD
-          cat > backend-override.tf << 'BACKEND_EOF'
+          # Backup and replace S3 backend with local backend for CI/CD
+          mv backend.tf backend.tf.bak
+          cat > backend.tf << 'BACKEND_EOF'
           terraform {
             backend "local" {
               path = "terraform-wsl.tfstate"
             }
           }
           BACKEND_EOF
-          echo "✅ Backend override created (using local state for CI/CD)"
+          echo "✅ Backend replaced with local backend for CI/CD"
 
       - name: Terraform Init
         run: terraform init -reconfigure
