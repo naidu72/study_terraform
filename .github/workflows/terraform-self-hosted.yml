@@ -95,7 +95,6 @@ jobs:
       - name: Terraform Plan
         run: |
           terraform plan \
-            -var-file="pi.tfvars" \
             -out=pi.tfplan \
             -no-color
 
@@ -159,7 +158,6 @@ jobs:
       - name: Terraform Plan
         run: |
           terraform plan \
-            -var-file="wsl.tfvars" \
             -out=wsl.tfplan \
             -no-color
 
