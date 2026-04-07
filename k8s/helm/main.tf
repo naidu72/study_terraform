@@ -1,14 +1,14 @@
 resource "helm_release" "ingress_nginx" {
-  name       = "ingress-nginx"
-  repository = "https://kubernetes.github.io/ingress-nginx"
-  chart      = "ingress-nginx"
-  version    = "4.10.0"          # always pin in Terraform
-  namespace  = "ingress-nginx1"
-  create_namespace = true        # saves a separate namespace resource
+  name             = "ingress-nginx"
+  repository       = "https://kubernetes.github.io/ingress-nginx"
+  chart            = "ingress-nginx"
+  version          = "4.10.0" # always pin in Terraform
+  namespace        = "ingress-nginx1"
+  create_namespace = true # saves a separate namespace resource
 
   set {
     name  = "controller.service.type"
-    value = "NodePort"           # NodePort works on KIND/Pi without LB
+    value = "NodePort" # NodePort works on KIND/Pi without LB
   }
 
   set {
@@ -26,6 +26,6 @@ resource "helm_release" "ingress_nginx" {
     }
   })]
 
-  timeout = 300   # seconds — charts with many resources need time
-  wait    = true  # block until all pods are Running
+  timeout = 300  # seconds — charts with many resources need time
+  wait    = true # block until all pods are Running
 }

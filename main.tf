@@ -20,7 +20,7 @@ module "network" {
 # Adding a new service = one entry in tfvars, zero code changes.
 #
 module "service" {
-  for_each = var.services          # key = service name
+  for_each = var.services # key = service name
 
   source = "./modules/docker-service"
 

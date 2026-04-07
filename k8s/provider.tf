@@ -10,7 +10,7 @@ terraform {
 # Option A — use current kubeconfig context (simplest for local work)
 provider "kubernetes" {
   config_path    = "~/.kube/local"
-  config_context = "kind-k8s-kind"   # your KIND context name
+  config_context = "kind-k8s-kind" # your KIND context name
 }
 
 # Option B — explicit fields (better for CI or when managing

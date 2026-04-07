@@ -48,7 +48,7 @@ resource "docker_container" "protected" {
   lifecycle {
     create_before_destroy = true
     ignore_changes        = [labels]
-    prevent_destroy       = true      # static literal — protected path
+    prevent_destroy       = true # static literal — protected path
   }
 }
 
@@ -77,7 +77,7 @@ resource "docker_container" "unprotected" {
   lifecycle {
     create_before_destroy = true
     ignore_changes        = [labels]
-    prevent_destroy       = false     # static literal — unprotected path
+    prevent_destroy       = false # static literal — unprotected path
   }
 }
 

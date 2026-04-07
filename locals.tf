@@ -1,11 +1,11 @@
 locals {
   # Naming convention: {env}-{project}-{component}
   # Computed once here, referenced everywhere else
-  name_prefix   = "${var.env}-${var.project}" # dev-homelab
-  network_name  = "${local.name_prefix}-net"  # dev-homelab-net
+  name_prefix  = "${var.env}-${var.project}" # dev-homelab
+  network_name = "${local.name_prefix}-net"  # dev-homelab-net
 
   # Fake FQDN used in nginx env config
-  app_fqdn = "${var.project}.${var.env}.local"  #homelab.
+  app_fqdn = "${var.project}.${var.env}.local" #homelab.
 
   # Common labels applied to all containers
   common_labels = {

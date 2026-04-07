@@ -28,7 +28,7 @@ resource "kubernetes_secret" "db_creds" {
   # type defaults to Opaque
   data = {
     username = var.db_user
-    password = var.db_password   # mark sensitive = true in variable
+    password = var.db_password # mark sensitive = true in variable
   }
 }
 # Terraform base64-encodes values automatically —

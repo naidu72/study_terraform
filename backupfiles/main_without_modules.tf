@@ -22,9 +22,9 @@ resource "docker_network" "app" {
 
 # ── Nginx container ───────────────────────────────────────────
 resource "docker_container" "nginx" {
-  name  = local.nginx_name
-#   image = data.docker_image.nginx.image_id  #v2
-  image =  data.docker_image.nginx.repo_digest #v3
+  name = local.nginx_name
+  #   image = data.docker_image.nginx.image_id  #v2
+  image = data.docker_image.nginx.repo_digest #v3
 
   ports {
     internal = 80
@@ -48,15 +48,15 @@ resource "docker_container" "nginx" {
     # Protect the nginx container from accidental destroy
     # in production workspaces
     # prevent_destroy = var.env == "prod" ? true : false
-    prevent_destroy     = false
+    prevent_destroy = false
   }
 }
 
 # ── Postgres container ────────────────────────────────────────
 resource "docker_container" "postgres" {
-  name  = local.postgres_name
-#   image = data.docker_image.postgres.image_id #v2
-    image = data.docker_image.postgres.repo_digest #v3
+  name = local.postgres_name
+  #   image = data.docker_image.postgres.image_id #v2
+  image = data.docker_image.postgres.repo_digest #v3
 
   ports {
     internal = 5432

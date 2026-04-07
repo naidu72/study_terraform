@@ -8,5 +8,5 @@ terraform {
 }
 
 provider "docker" {
-  host = local.docker_host    # auto-picked from workspace name
+  host = local.docker_host # auto-picked from workspace name
 }

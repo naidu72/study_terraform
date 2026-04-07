@@ -22,9 +22,9 @@ output "network_name" {
 # Handy summary printed after apply
 output "summary" {
   value = {
-    environment  = var.env
-    network      = module.network.network_name
+    environment   = var.env
+    network       = module.network.network_name
     service_count = length(module.service)
-    urls         = { for n, s in module.service : n => s.url }
+    urls          = { for n, s in module.service : n => s.url }
   }
 }
