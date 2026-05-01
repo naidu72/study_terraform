@@ -1,0 +1,42 @@
+# .github/workflows/test-runner.yml
+name: Test Online Runner
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:        # Manual trigger from GitHub UI
+
+jobs:
+  test-cloud-runner:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Runner info
+        run: |
+          echo "=== Runner Info ==="
+          echo "Hostname: $(hostname)"
+          echo "OS: $(uname -a)"
+          echo "Architecture: $(uname -m)"
+          echo "CPU cores: $(nproc)"
+          echo "RAM: $(free -h | grep Mem)"
+          echo "Disk: $(df -h / | tail -1)"
+
+      - name: Tool versions
+        run: |
+          echo "=== Pre-installed Tools ==="
+          docker --version
+          kubectl version --client
+          terraform --version
+          python3 --version
+          node --version
+          aws --version
+
+      - name: Simple Docker test
+        run: |
+          docker run --rm hello-world
+
+      - name: Done
+        run: echo "Cloud runner working!"
