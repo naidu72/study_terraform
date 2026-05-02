@@ -41,7 +41,6 @@ jobs:
           node --version
           aws --version
           terraform --version
-          kubectl -v
 
       - name: Simple Docker test
         run: docker run --rm hello-world
