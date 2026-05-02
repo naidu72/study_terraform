@@ -28,7 +28,10 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.10.0"
-
+      - name: Install Kubectl
+        uses: azure/setup-kubectl@v4
+        with: 
+          version: latest  
       - name: Tool versions
         run: |
           echo "=== Pre-installed Tools ==="
