@@ -6,7 +6,7 @@ on:
 
 jobs:
   deploy:
-    runs-on: [self-hosted, pi5-runner]   # → your Pi runner
+    runs-on: [self-hosted, pi5]   # → your Pi runner
     steps:
       - uses: actions/checkout@v4
       - run: kubectl get nodes
