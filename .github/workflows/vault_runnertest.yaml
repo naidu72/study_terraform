@@ -1,0 +1,44 @@
+name: vault integration
+on:
+  push:
+    branches: [pipeline]
+  workflow_dispatch:
+
+permissions:
+  id-token: write      # required for OIDC
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get kubeconfig from Vault
+        uses: hashicorp/vault-action@v3
+        id: vault
+        with:
+          url: https://vault.naidu72.info
+          method: jwt
+          role: github-actions
+          secrets: |
+            secret/data/homelab/pi-kubeconfig kubeconfig | PI_KUBECONFIG
+
+      - name: Setup kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ steps.vault.outputs.PI_KUBECONFIG }}" | base64 -d > ~/.kube/config
+
+      - name: Verify cluster
+        run: kubectl get nodes
+
+      - name: Deploy nginx
+        run: |
+          kubectl create deployment nginx \
+            --image=nginx:alpine \
+            --replicas=1 \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Verify
+        run: kubectl rollout status deployment/nginx
