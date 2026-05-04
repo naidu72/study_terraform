@@ -36,7 +36,7 @@ jobs:
           echo "${{ steps.vault.outputs.PI_KUBECONFIG }}" | base64 -d > ~/.kube/config
 
       - name: Verify cluster
-        run: kubectl get nodes
+        run: kubectl get no
 
       - name: Deploy nginx
         run: |
