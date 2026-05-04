@@ -3,7 +3,7 @@ name: Test Online Runner
 
 on:
   push:
-    branches: [pipeline]
+    # branches: [pipeline]
   workflow_dispatch:
 
 jobs:
