@@ -202,16 +202,3 @@ variable "common_labels" {
     "managed-by"  = "terraform"
   }
 }
-
-# GHCR Credentials
-variable "ghcr_username" {
-  description = "GitHub Container Registry username"
-  type        = string
-  default     = "naidu72"
-}
-
-variable "ghcr_token" {
-  description = "GitHub Container Registry token"
-  type        = string
-  sensitive   = true
-}

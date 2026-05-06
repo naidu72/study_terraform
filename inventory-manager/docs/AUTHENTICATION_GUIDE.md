@@ -1,5 +1,11 @@
 # Authentication Guide for Phase 2
 
+## Current Status
+You're currently authenticated to:
+- AWS ECR (332728166114.dkr.ecr.us-east-1.amazonaws.com)
+- AWS ECR (344760941228.dkr.ecr.us-east-1.amazonaws.com)  
+- JFrog (hansentech.jfrog.io)
+
 ## 🔑 Required: Authenticate to Docker Registries
 
 ### Option 1: GitHub Container Registry (Recommended for Pi cluster)

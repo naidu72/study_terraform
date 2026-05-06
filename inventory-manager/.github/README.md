@@ -90,22 +90,55 @@ This directory contains GitHub Actions workflows for automated building, testing
 1. **Destroy** - Runs `terraform destroy` (only if confirmed)
 2. **Abort** - Aborts if confirmation is incorrect
 
-## 🔐 Required GitHub Secrets
+## 🔐 Secrets Management
 
-Configure these secrets in your GitHub repository settings:
+### Using Vault JWT Authentication (Recommended)
 
-### Docker Registry
-- `GITHUB_TOKEN` - Automatically provided by GitHub Actions
+The workflows use **HashiCorp Vault JWT/OIDC authentication** to fetch secrets automatically. This eliminates the need to store secrets in GitHub!
 
-### MinIO Backend
-- `MINIO_ACCESS_KEY` - MinIO access key ID
-- `MINIO_SECRET_KEY` - MinIO secret access key
+**Benefits:**
+- ✅ No secrets to manage in GitHub
+- ✅ Automatic authentication with OIDC tokens
+- ✅ Short-lived credentials
+- ✅ Centralized secret management in Vault
+- ✅ Auditable access
 
-### Application Secrets
-- `GHCR_USERNAME` - GitHub Container Registry username (naidu72)
-- `GHCR_TOKEN` - GHCR personal access token
-- `POSTGRES_PASSWORD` - PostgreSQL database password
-- `JWT_SECRET_KEY` - JWT secret key for authentication
+**Setup:**
+See [VAULT-JWT-SETUP.md](./VAULT-JWT-SETUP.md) for complete configuration instructions.
+
+**Required Vault Secrets:**
+All secrets are fetched from Vault automatically:
+- `secret/minio/credentials` - MinIO access credentials
+  - `access_key_id`
+  - `secret_access_key`
+- `secret/ghcr/credentials` - GitHub Container Registry token
+  - `token`
+- `secret/inventory-manager/postgres` - PostgreSQL password
+  - `password`
+- `secret/inventory-manager/jwt` - JWT secret key
+  - `secret_key`
+
+**Workflow Permissions:**
+All workflows include these permissions for JWT auth:
+```yaml
+permissions:
+  contents: read
+  id-token: write  # Required for OIDC token
+```
+
+### Alternative: GitHub Secrets (Not Recommended)
+
+If you prefer to use GitHub secrets instead of Vault:
+
+1. Remove JWT auth steps from workflows
+2. Configure these secrets in GitHub repository settings:
+   - `MINIO_ACCESS_KEY`
+   - `MINIO_SECRET_KEY`
+   - `GHCR_TOKEN`
+   - `POSTGRES_PASSWORD`
+   - `JWT_SECRET_KEY`
+
+⚠️ **Note:** Using GitHub secrets is less secure and harder to manage across multiple repositories.
 
 ## 🖥️ Self-Hosted Runner Setup
 
@@ -288,17 +321,22 @@ curl https://inventory-pi.naidu72.info/api/v1/health
 
 ### Secrets Not Working
 
-1. Verify secrets in GitHub:
+1. **If using Vault JWT auth** (recommended):
+   - Check Vault is accessible: `curl https://vault.naidu72.info/v1/sys/health`
+   - Verify JWT role exists: `vault read auth/jwt/role/github-actions`
+   - Check workflow has `id-token: write` permission
+   - Review Vault audit logs for auth failures
+
+2. **If using GitHub secrets** (alternative):
    - Go to Settings → Secrets and variables → Actions
    - Ensure all required secrets are set
-
-2. Test secret access in workflow:
-   ```yaml
-   - name: Test secrets
-     run: |
-       echo "Testing secret access..."
-       [ -n "${{ secrets.MINIO_ACCESS_KEY }}" ] && echo "✓ MINIO_ACCESS_KEY set"
-   ```
+   - Test secret access in workflow:
+     ```yaml
+     - name: Test secrets
+       run: |
+         echo "Testing secret access..."
+         [ -n "${{ secrets.MINIO_ACCESS_KEY }}" ] && echo "✓ MINIO_ACCESS_KEY set"
+     ```
 
 ## 📈 Performance Optimizations
 
@@ -347,6 +385,9 @@ on:
 - [Terraform GitHub Actions](https://github.com/hashicorp/setup-terraform)
 - [Docker Build Push Action](https://github.com/docker/build-push-action)
 - [Self-hosted Runners](https://docs.github.com/en/actions/hosting-your-own-runners)
+- **[Vault JWT/OIDC Setup Guide](./VAULT-JWT-SETUP.md)** ← Start here for secrets management
+- [HashiCorp Vault Action](https://github.com/hashicorp/vault-action)
+- [GitHub OIDC with Vault](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect)
 
 ## 🎯 Best Practices
 
