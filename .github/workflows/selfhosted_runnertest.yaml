@@ -1,7 +1,7 @@
 name: Deploy to Pi 5
 on:
-  push:
-    # branches: [pipeline]
+  # push:
+  #   # branches: [pipeline]
   workflow_dispatch:
 
 jobs:

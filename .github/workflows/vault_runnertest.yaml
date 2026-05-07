@@ -1,7 +1,7 @@
 name: vault integration
 on:
-  push:
-    branches: [pipeline]
+  # push:
+  #   # branches: [pipeline]
   workflow_dispatch:
 
 permissions:
