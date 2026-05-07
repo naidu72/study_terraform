@@ -4,7 +4,7 @@
 variable "kubeconfig_path" {
   description = "Path to kubeconfig file"
   type        = string
-  default     = "~/.kube/pi-cluster"
+  default     = "/home/naidu/.kube/config"
 }
 
 variable "kubeconfig_context" {
