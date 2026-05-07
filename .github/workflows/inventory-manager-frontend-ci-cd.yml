@@ -79,7 +79,7 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ env.GHCR_TOKEN }}
+          password: ${{ steps.vault.outputs.GHCR_TOKEN }}
 
       - name: Extract metadata
         id: meta
