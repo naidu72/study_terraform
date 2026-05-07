@@ -62,6 +62,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: GitHub repository (must match Vault JWT bound_claims)
+        run: echo "github.repository=${{ github.repository }}"
+
       - name: Import Vault Secrets
         uses: hashicorp/vault-action@v3
         with:

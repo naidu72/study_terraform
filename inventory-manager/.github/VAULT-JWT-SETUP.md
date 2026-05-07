@@ -68,6 +68,29 @@ vault policy write github-actions github-actions-policy.hcl
 
 ### Step 3: Create JWT Role for GitHub Actions
 
+#### Prefer one generic role (recommended)
+
+Use a **single** role name (e.g. `github-actions`) for every workflow in the **same** GitHub repository. Restrict access with the OIDC claim **`repository`** (`owner/name`), not with **`bound_subject`** tied to one branch.
+
+If you previously set:
+
+`bound_subject = repo:naidu72/study_terraform:ref:refs/heads/pipeline`
+
+then **only** runs on branch `pipeline` can authenticate; pushes to `main` or other branches get **403**. That is why separate “per pipeline” Vault roles are usually unnecessary: you want **one repo-wide role** and optional **`bound_claims`** for `repository` only.
+
+From the repo root:
+
+```bash
+export VAULT_ADDR=https://vault.naidu72.info
+vault login
+./.github/configure-vault-github-actions-role-generic.sh
+# Optional: GITHUB_REPO_FULL=owner/repo BOUND_AUDIENCES=https://github.com/owner ./.github/configure-vault-github-actions-role-generic.sh
+```
+
+All workflows can keep `role: github-actions` in `hashicorp/vault-action`.
+
+#### Manual: Create JWT Role for GitHub Actions
+
 Configure a role that maps GitHub OIDC tokens to Vault policies.
 
 **Check whether the role already exists:**
@@ -217,6 +240,35 @@ vault policy read github-actions
 3. Should see: "Successfully retrieved secret from Vault"
 
 ## 🐛 Troubleshooting
+
+### Error: `Response code 403 (Forbidden)` from `hashicorp/vault-action` (JWT)
+
+**Cause:** The GitHub OIDC token is valid, but the Vault JWT role **rejects** the login. The usual reason after moving CI to a **monorepo** is that `bound_claims` on role `github-actions` still expect the old repository (e.g. `owner/inventory-manager`) while the workflow now runs in **`owner/study_terraform`** (or whatever `github.repository` is).
+
+**Fix:** Make `bound_claims.repository` match the real GitHub repo **exactly** (lowercase `owner/name`).
+
+1. In a failing workflow log, read the line from step **"GitHub repository (must match Vault JWT bound_claims)"** — or run locally: the repo is `https://github.com/...` path.
+2. Rewrite the Vault role (use a JSON file for `bound_claims` as in Step 3):
+
+```bash
+# Example: monorepo is naidu72/study_terraform — use YOUR org/repo
+cat > /tmp/bound-claims.json <<'EOF'
+{"repository":"naidu72/study_terraform"}
+EOF
+
+vault write auth/jwt/role/github-actions \
+  role_type=jwt \
+  bound_audiences="https://github.com/naidu72" \
+  user_claim=actor \
+  bound_claims_type=glob \
+  policies=github-actions \
+  ttl=10m \
+  bound_claims=@/tmp/bound-claims.json
+```
+
+Replace `naidu72` in `bound_audiences` and `naidu72/study_terraform` in `repository` with your org and repo. Re-run `vault read auth/jwt/role/github-actions` to confirm.
+
+**Note:** A 403 can also be wrong `bound_audiences` (must align with how GitHub issues the token, often `https://github.com/ORG`).
 
 ### Error: "permission denied"
 

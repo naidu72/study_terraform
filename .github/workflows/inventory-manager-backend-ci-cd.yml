@@ -68,6 +68,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # If Vault returns 403 here, JWT role bound_claims.repository must equal github.repository (monorepo name).
+      - name: GitHub repository (must match Vault JWT bound_claims)
+        run: echo "github.repository=${{ github.repository }}"
+
       - name: Import Vault Secrets
         uses: hashicorp/vault-action@v3
         with:
