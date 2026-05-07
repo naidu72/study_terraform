@@ -26,10 +26,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v5.4.0
         with:
           python-version: '3.11'
           cache: 'pip'
@@ -66,7 +66,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
 
       # If Vault returns 403 here, JWT role bound_claims.repository must equal github.repository (monorepo name).
       - name: GitHub repository (must match Vault JWT bound_claims)
@@ -74,7 +74,7 @@ jobs:
 
       - name: Import Vault Secrets
         id: vault 
-        uses: hashicorp/vault-action@v3
+        uses: actions/setup-python@v5.4.0
         with:
           url: ${{ env.VAULT_ADDR }}
           method: jwt
@@ -117,7 +117,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
 
       - name: Debug OIDC token
         run: |
@@ -126,7 +126,7 @@ jobs:
           echo "$TOKEN" | cut -d. -f2 | base64 -d 2>/dev/null | jq .
 
       - name: Import Vault Secrets
-        uses: hashicorp/vault-action@v3
+        uses: actions/setup-python@v5.4.0
         id: vault
         with:
           url: ${{ env.VAULT_ADDR }}
@@ -152,7 +152,7 @@ jobs:
           echo "TF_VAR_ghcr_username=naidu72" >> $GITHUB_ENV
 
       - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@v3.1.2
         with:
           terraform_version: 1.7.0
 

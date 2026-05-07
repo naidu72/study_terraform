@@ -26,7 +26,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -60,13 +60,13 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
 
       - name: GitHub repository (must match Vault JWT bound_claims)
         run: echo "github.repository=${{ github.repository }}"
 
       - name: Import Vault Secrets
-        uses: hashicorp/vault-action@v3
+        uses: hashicorp/vault-action@v3.1.0
         with:
           url: ${{ env.VAULT_ADDR }}
           method: jwt
@@ -109,7 +109,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
 
       - name: Debug OIDC token
         run: |
@@ -118,7 +118,7 @@ jobs:
           echo "$TOKEN" | cut -d. -f2 | base64 -d 2>/dev/null | jq .
 
       - name: Import Vault Secrets
-        uses: hashicorp/vault-action@v3
+        uses: hashicorp/vault-action@v3.1.0
         id: vault
         with:
           url: ${{ env.VAULT_ADDR }}
@@ -144,7 +144,7 @@ jobs:
           echo "TF_VAR_ghcr_username=naidu72" >> $GITHUB_ENV
 
       - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@v3.1.2
         with:
           terraform_version: 1.7.0
 

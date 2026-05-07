@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.2.2
 
       - name: Debug OIDC token
         run: |
@@ -21,7 +21,7 @@ jobs:
             "$ACTIONS_ID_TOKEN_REQUEST_URL" | jq -r '.value')
           echo $TOKEN | cut -d. -f2 | base64 -d 2>/dev/null | jq .    
       - name: Get kubeconfig from Vault
-        uses: hashicorp/vault-action@v3
+        uses: hashicorp/vault-action@v3.1.0
         id: vault
         with:
           url: https://vault.naidu72.info

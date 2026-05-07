@@ -8,7 +8,7 @@ jobs:
   deploy:
     runs-on: [self-hosted, pi5]   # → your Pi runner
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.2.2
       - run: kubectl get nodes
       - run: kubectl create deployment nginx --image=nginx:alpine --replicas=1 --dry-run=client -o yaml | kubectl apply -f -
       - run: kubectl rollout status deployment/nginx
