@@ -66,6 +66,7 @@ jobs:
         run: echo "github.repository=${{ github.repository }}"
 
       - name: Import Vault Secrets
+        id: vault
         uses: hashicorp/vault-action@v3.1.0
         with:
           url: ${{ env.VAULT_ADDR }}
