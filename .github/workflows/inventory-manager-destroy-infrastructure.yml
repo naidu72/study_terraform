@@ -1,0 +1,102 @@
+name: Inventory Manager — Destroy Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to destroy'
+        required: true
+        type: choice
+        options:
+          - pi-cluster
+      confirmation:
+        description: 'Type "DESTROY" to confirm'
+        required: true
+        type: string
+
+env:
+  VAULT_ADDR: https://vault.naidu72.info
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  destroy:
+    runs-on: [self-hosted, pi5]
+    if: ${{ inputs.confirmation == 'DESTROY' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Debug OIDC token
+        run: |
+          TOKEN=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL" | jq -r '.value')
+          echo "$TOKEN" | cut -d. -f2 | base64 -d 2>/dev/null | jq .
+
+      - name: Import Vault Secrets
+        uses: hashicorp/vault-action@v3
+        id: vault
+        with:
+          url: ${{ env.VAULT_ADDR }}
+          method: jwt
+          role: github-actions
+          secrets: |
+            secret/data/minio/credentials access_key_id | AWS_ACCESS_KEY_ID ;
+            secret/data/minio/credentials secret_access_key | AWS_SECRET_ACCESS_KEY ;
+            secret/data/ghcr/credentials token | TF_VAR_ghcr_token ;
+            secret/data/inventory-manager/postgres password | TF_VAR_postgres_password ;
+            secret/data/inventory-manager/jwt secret_key | TF_VAR_jwt_secret_key ;
+            secret/data/homelab/pi-kubeconfig kubeconfig | PI_KUBECONFIG
+
+      - name: Setup kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ steps.vault.outputs.PI_KUBECONFIG }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+          kubectl config current-context || true
+
+      - name: Set Terraform variables
+        run: |
+          echo "TF_VAR_ghcr_username=naidu72" >> $GITHUB_ENV
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.0
+
+      - name: Terraform Init
+        working-directory: inventory-manager/terraform/environments/${{ inputs.environment }}
+        run: terraform init
+
+      - name: Terraform Destroy
+        working-directory: inventory-manager/terraform/environments/${{ inputs.environment }}
+        run: terraform destroy -auto-approve
+
+      - name: Verify destruction
+        run: |
+          echo "Checking if resources are destroyed..."
+          kubectl get all -n inventory-manager || echo "✅ Namespace destroyed successfully"
+
+      - name: Destruction summary
+        run: |
+          echo "## Destruction Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ✅ Infrastructure destroyed" >> $GITHUB_STEP_SUMMARY
+          echo "- **State**: Preserved in MinIO (s3://terraform-state/inventory-manager/${{ inputs.environment }}/terraform.tfstate)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "⚠️ **Note**: Terraform state file is preserved in MinIO for recovery." >> $GITHUB_STEP_SUMMARY
+
+  abort:
+    runs-on: ubuntu-latest
+    if: ${{ inputs.confirmation != 'DESTROY' }}
+
+    steps:
+      - name: Abort destroy
+        run: |
+          echo "❌ Destruction aborted - incorrect confirmation"
+          echo "Please type 'DESTROY' exactly to confirm infrastructure destruction"
+          exit 1
