@@ -73,6 +73,7 @@ jobs:
         run: echo "github.repository=${{ github.repository }}"
 
       - name: Import Vault Secrets
+        id: vault 
         uses: hashicorp/vault-action@v3
         with:
           url: ${{ env.VAULT_ADDR }}
@@ -86,7 +87,7 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ env.GHCR_TOKEN }}
+          password: ${{ steps.vault.outputs.GHCR_TOKEN }}
 
       - name: Extract metadata
         id: meta
