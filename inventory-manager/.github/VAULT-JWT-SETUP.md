@@ -55,6 +55,11 @@ path "secret/data/ghcr/credentials" {
 path "secret/data/inventory-manager/*" {
   capabilities = ["read"]
 }
+
+# Pi cluster kubeconfig (CI: kubectl / kubernetes provider)
+path "secret/data/homelab/pi-kubeconfig" {
+  capabilities = ["read"]
+}
 EOF
 
 # Apply the policy

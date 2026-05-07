@@ -91,6 +91,11 @@ path "secret/data/ghcr/credentials" {
 path "secret/data/inventory-manager/*" {
   capabilities = ["read"]
 }
+
+# Pi cluster kubeconfig (GitHub Actions -> kubectl/terraform)
+path "secret/data/homelab/pi-kubeconfig" {
+  capabilities = ["read"]
+}
 EOF
 
 vault policy write github-actions /tmp/github-actions-policy.hcl

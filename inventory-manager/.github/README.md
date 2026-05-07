@@ -1,14 +1,18 @@
 # CI/CD Pipeline Documentation
 
-This directory contains GitHub Actions workflows for automated building, testing, and deployment of the Inventory Manager application.
+Workflow definitions for Inventory Manager live in the **repository root** under `.github/workflows/` (files named `inventory-manager-*.yml`). GitHub Actions only picks up workflows from that root `.github/workflows/` folder, not from `inventory-manager/.github/workflows/`.
+
+**Branches:** push-triggered jobs run on **`pipeline`**, **`main`**, and **`develop`**; image build and Kubernetes deploy run on push to **`pipeline`** or **`main`** (so you can iterate on `pipeline` without merging first).
+
+This folder keeps Vault/JWT setup docs and helper scripts only.
 
 ## 🔄 Workflows Overview
 
-### 1. Backend CI/CD (`backend-ci-cd.yml`)
+### 1. Backend CI/CD (`inventory-manager-backend-ci-cd.yml`)
 
 **Triggers:**
-- Push to `main` or `develop` branches (backend changes only)
-- Pull requests to `main` (backend changes only)
+- Push to `pipeline`, `main`, or `develop` (paths under `inventory-manager/app/backend/`)
+- Pull requests targeting `main` or `pipeline`
 
 **Jobs:**
 1. **Test**
@@ -19,7 +23,7 @@ This directory contains GitHub Actions workflows for automated building, testing
 
 2. **Build and Push**
    - Runs on: `[self-hosted, pi5]`
-   - Only on push to `main`
+   - Push to `main` or `pipeline`
    - Builds ARM64 Docker image
    - Pushes to GHCR (ghcr.io/naidu72/inventory-backend)
 
@@ -29,11 +33,11 @@ This directory contains GitHub Actions workflows for automated building, testing
    - Waits for pod readiness
    - Verifies deployment
 
-### 2. Frontend CI/CD (`frontend-ci-cd.yml`)
+### 2. Frontend CI/CD (`inventory-manager-frontend-ci-cd.yml`)
 
 **Triggers:**
-- Push to `main` or `develop` branches (frontend changes only)
-- Pull requests to `main` (frontend changes only)
+- Push to `pipeline`, `main`, or `develop` (paths under `inventory-manager/app/frontend/`)
+- Pull requests targeting `main` or `pipeline`
 
 **Jobs:**
 1. **Test**
@@ -44,7 +48,7 @@ This directory contains GitHub Actions workflows for automated building, testing
 
 2. **Build and Push**
    - Runs on: `[self-hosted, pi5]`
-   - Only on push to `main`
+   - Push to `main` or `pipeline`
    - Builds ARM64 Docker image
    - Pushes to GHCR (ghcr.io/naidu72/inventory-frontend)
 
@@ -54,7 +58,7 @@ This directory contains GitHub Actions workflows for automated building, testing
    - Waits for pod readiness
    - Tests application endpoint
 
-### 3. Full Stack Deploy (`full-stack-deploy.yml`)
+### 3. Full Stack Deploy (`inventory-manager-full-stack-deploy.yml`)
 
 **Trigger:** Manual (`workflow_dispatch`)
 
@@ -67,7 +71,7 @@ This directory contains GitHub Actions workflows for automated building, testing
 2. **Build Frontend** - Builds and pushes frontend image
 3. **Deploy** - Deploys both services with Terraform
 
-### 4. Terraform Plan on PR (`terraform-plan.yml`)
+### 4. Terraform Plan on PR (`inventory-manager-terraform-plan.yml`)
 
 **Trigger:** Pull requests to `main` (Terraform changes only)
 
@@ -78,7 +82,7 @@ This directory contains GitHub Actions workflows for automated building, testing
    - Terraform plan
    - Comments plan output on PR
 
-### 5. Destroy Infrastructure (`destroy-infrastructure.yml`)
+### 5. Destroy Infrastructure (`inventory-manager-destroy-infrastructure.yml`)
 
 **Trigger:** Manual (`workflow_dispatch`) with confirmation
 
