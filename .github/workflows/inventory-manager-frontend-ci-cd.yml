@@ -144,10 +144,6 @@ jobs:
         run: |
           echo "TF_VAR_ghcr_username=naidu72" >> $GITHUB_ENV
 
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v3.1.2
-        with:
-          terraform_version: 1.7.0
 
       - name: Terraform Init
         working-directory: inventory-manager/terraform/environments/pi-cluster

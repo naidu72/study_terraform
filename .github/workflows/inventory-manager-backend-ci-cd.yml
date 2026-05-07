@@ -32,7 +32,7 @@ jobs:
         uses: actions/checkout@v4.2.2
 
       - name: Set up Python
-        uses: actions/setup-python@v5.4.0
+        run: python3 --version && pip3 --version
         with:
           python-version: '3.11'
           cache: 'pip'
@@ -41,14 +41,14 @@ jobs:
       - name: Install dependencies
         working-directory: inventory-manager/app/backend
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest pytest-cov pytest-asyncio httpx
+          python3 -m pip3 install --break-system-packages --upgrade pip
+          pip3 install --break-system-packages -r requirements.txt
+          pip3 install --break-system-packages pytest pytest-cov pytest-asyncio httpx
 
       - name: Run linting
         working-directory: inventory-manager/app/backend
         run: |
-          pip install flake8
+          pip3 install --break-system-packages flake8
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
