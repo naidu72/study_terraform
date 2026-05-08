@@ -23,7 +23,7 @@ permissions:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, pi5]
 
     steps:
       - name: Checkout code
