@@ -37,19 +37,22 @@ jobs:
           python3 --version
           pip3 --version
 
+      - name: Install system dependencies
+        run: sudo apt-get install -y -qq libpq-dev
+
       - name: Install dependencies
         working-directory: inventory-manager/app/backend
         run: |
-          pip3 install --break-system-packages --upgrade pip
-          pip3 install --break-system-packages -r requirements.txt
-          pip3 install --break-system-packages pytest pytest-cov pytest-asyncio httpx
+          python3 -m venv /tmp/inv-venv
+          /tmp/inv-venv/bin/pip install --upgrade pip
+          /tmp/inv-venv/bin/pip install -r requirements.txt
+          /tmp/inv-venv/bin/pip install pytest pytest-cov pytest-asyncio httpx flake8
 
       - name: Run linting
         working-directory: inventory-manager/app/backend
         run: |
-          pip3 install --break-system-packages flake8
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+          /tmp/inv-venv/bin/flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          /tmp/inv-venv/bin/flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
       - name: Run tests
         working-directory: inventory-manager/app/backend
@@ -59,7 +62,7 @@ jobs:
           JWT_ALGORITHM: HS256
           ACCESS_TOKEN_EXPIRE_MINUTES: 30
         run: |
-          pytest tests/ -v --cov=. --cov-report=term-missing || echo "No tests found, skipping"
+          /tmp/inv-venv/bin/pytest tests/ -v --cov=. --cov-report=term-missing || echo "No tests found, skipping"
 
   build-and-push:
     needs: test
