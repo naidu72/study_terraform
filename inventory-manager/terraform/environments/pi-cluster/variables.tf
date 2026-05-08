@@ -26,7 +26,7 @@ postgres_storage_class = "local-path"
 postgres_user          = "inventory_user"
 postgres_database      = "inventory_db"
 
-# Redis
+## Redis
 redis_image         = "redis:7-alpine"
 redis_storage_size  = "2Gi"
 redis_storage_class = "local-path"
