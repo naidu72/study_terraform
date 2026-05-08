@@ -2,7 +2,7 @@
 # kubeconfig is written to ~/.kube/config by the CI/CD pipeline from Vault
 
 kubeconfig_path    = "/home/naidu/.kube/config"
-kubeconfig_context = "default"
+kubeconfig_context = "pi-k3s"
 
 namespace  = "inventory-manager"
 app_name   = "inventory-manager"
