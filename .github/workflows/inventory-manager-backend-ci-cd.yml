@@ -194,3 +194,4 @@ jobs:
           kubectl get pods -n inventory-manager -l app=inventory-manager-backend
           kubectl logs -n inventory-manager -l app=inventory-manager-backend --tail=50
 
+
