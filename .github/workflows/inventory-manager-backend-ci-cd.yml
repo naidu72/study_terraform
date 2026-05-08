@@ -10,6 +10,25 @@ on:
     branches: [ main, pipeline ]
     paths:
       - 'inventory-manager/app/backend/**'
+  workflow_dispatch:                    # ← manual trigger with inputs
+    inputs:
+      terraform_action:
+        description: 'Terraform Action'
+        required: true
+        default: 'apply'
+        type: choice
+        options:
+          - apply
+          - destroy
+          - plan-only
+      environment:
+        description: 'Target Environment'
+        required: true
+        default: 'pi-cluster'
+        type: choice
+        options:
+          - pi-cluster
+          - k8s-cluster      
 
 env:
   REGISTRY: ghcr.io
@@ -178,15 +197,26 @@ jobs:
           terraform plan \
             -var="kubeconfig_path=/home/naidu/.kube/config" \
             -var="kubeconfig_context=pi-k3s" \
+            ${{ github.event.inputs.terraform_action == 'destroy' && '-destroy' || '' }} \
             -out=tfplan
 
       - name: Terraform Apply
+        if: github.event.inputs.terraform_action != 'plan-only'
         working-directory: inventory-manager/terraform/environments/pi-cluster
         env:
           AWS_ACCESS_KEY_ID: ${{ steps.vault.outputs.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ steps.vault.outputs.AWS_SECRET_ACCESS_KEY }}
-        run: terraform apply -auto-approve tfplan  
-       
+        run: terraform apply -auto-approve tfplan
+
+      - name: Terraform Destroy
+        if: github.event.inputs.terraform_action == 'destroy'
+        working-directory: inventory-manager/terraform/environments/pi-cluster
+        env:
+          AWS_ACCESS_KEY_ID: ${{ steps.vault.outputs.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ steps.vault.outputs.AWS_SECRET_ACCESS_KEY }}
+        run: terraform destroy -auto-approve \
+            -var="kubeconfig_path=/home/naidu/.kube/config" \
+            -var="kubeconfig_context=pi-k3s" 
 
       - name: Wait for deployment
         run: |
