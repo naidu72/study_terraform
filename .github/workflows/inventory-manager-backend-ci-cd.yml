@@ -155,18 +155,32 @@ jobs:
         run: |
           which terraform
           terraform --version
-
+          
       - name: Terraform Init
         working-directory: inventory-manager/terraform/environments/pi-cluster
+        env:
+          AWS_ACCESS_KEY_ID: ${{ steps.vault.outputs.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ steps.vault.outputs.AWS_SECRET_ACCESS_KEY }}
         run: terraform init
 
       - name: Terraform Plan
         working-directory: inventory-manager/terraform/environments/pi-cluster
-        run: terraform plan -out=tfplan
+        env:
+          AWS_ACCESS_KEY_ID: ${{ steps.vault.outputs.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ steps.vault.outputs.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          terraform plan \
+            -var="kubeconfig_path=/home/naidu/.kube/config" \
+            -var="kubeconfig_context=pi-k3s" \
+            -out=tfplan
 
       - name: Terraform Apply
         working-directory: inventory-manager/terraform/environments/pi-cluster
-        run: terraform apply -auto-approve tfplan
+        env:
+          AWS_ACCESS_KEY_ID: ${{ steps.vault.outputs.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ steps.vault.outputs.AWS_SECRET_ACCESS_KEY }}
+        run: terraform apply -auto-approve tfplan  
+       
 
       - name: Wait for deployment
         run: |
