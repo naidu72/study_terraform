@@ -56,13 +56,16 @@ jobs:
   build-and-push:
     needs: test
     runs-on: [self-hosted, pi5]
+    permissions:
+      id-token: write
+      contents: read
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/pipeline')
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.2.2
 
-      - name: GitHub repository (must match Vault JWT bound_claims)
+      - name: GitHub repository
         run: echo "github.repository=${{ github.repository }}"
 
       - name: Import Vault Secrets
@@ -76,7 +79,7 @@ jobs:
             secret/data/ghcr/credentials token | GHCR_TOKEN
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v3.3.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -93,7 +96,7 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6.10.0
         with:
           context: ./inventory-manager/app/frontend
           platforms: linux/arm64
@@ -106,21 +109,18 @@ jobs:
   deploy:
     needs: build-and-push
     runs-on: [self-hosted, pi5]
+    permissions:
+      id-token: write
+      contents: read
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/pipeline')
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.2.2
 
-      - name: Debug OIDC token
-        run: |
-          TOKEN=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "$ACTIONS_ID_TOKEN_REQUEST_URL" | jq -r '.value')
-          echo "$TOKEN" | cut -d. -f2 | base64 -d 2>/dev/null | jq .
-
       - name: Import Vault Secrets
-        uses: hashicorp/vault-action@v3.1.0
         id: vault
+        uses: hashicorp/vault-action@v3.1.0
         with:
           url: ${{ env.VAULT_ADDR }}
           method: jwt
@@ -144,6 +144,10 @@ jobs:
         run: |
           echo "TF_VAR_ghcr_username=naidu72" >> $GITHUB_ENV
 
+      - name: Verify Terraform
+        run: |
+          which terraform
+          terraform --version
 
       - name: Terraform Init
         working-directory: inventory-manager/terraform/environments/pi-cluster
