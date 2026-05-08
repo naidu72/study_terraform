@@ -15,6 +15,7 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: naidu72/inventory-frontend
   VAULT_ADDR: https://vault.naidu72.info
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true  
 
 permissions:
   contents: read
