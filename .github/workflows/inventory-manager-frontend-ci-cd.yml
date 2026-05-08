@@ -178,3 +178,4 @@ jobs:
           sleep 10
           curl -f https://inventory-pi.naidu72.info/ || exit 1
           echo "✅ Application is accessible"
+
