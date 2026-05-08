@@ -86,6 +86,8 @@ jobs:
           url: ${{ env.VAULT_ADDR }}
           method: jwt
           role: github-actions
+          jwtTtl: 3600
+          exportToken: false
           secrets: |
             secret/data/ghcr/credentials token | GHCR_TOKEN
 
