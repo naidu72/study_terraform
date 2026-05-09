@@ -2,8 +2,8 @@
 name: Test Online Runner
 
 on:
-  push:
-    branches: [pipeline]
+  # push:
+  #   # branches: [pipeline]
   workflow_dispatch:
 
 jobs:
@@ -12,7 +12,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
 
       - name: Runner info
         run: |
@@ -25,7 +25,7 @@ jobs:
           echo "Disk: $(df -h / | tail -1)"
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@v3.1.2
         with:
           terraform_version: "1.10.0"
       - name: Install Kubectl
@@ -41,7 +41,7 @@ jobs:
           node --version
           aws --version
             terraform --version
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.2.2
       - name: Setup kubeconfig
         run: |
           mkdir -p ~/.kube

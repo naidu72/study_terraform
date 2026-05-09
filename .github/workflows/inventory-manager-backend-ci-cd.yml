@@ -52,7 +52,6 @@ jobs:
         uses: actions/checkout@v4.2.2
         with:
           ref: pipeline
-
       - name: Verify Python
         run: |
           python3 --version
@@ -98,7 +97,6 @@ jobs:
         uses: actions/checkout@v4.2.2
         with:
           ref: pipeline
-
       - name: GitHub repository
         run: echo "github.repository=${{ github.repository }}"
 
@@ -153,9 +151,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.2.2
+
         with:
           ref: pipeline
-
       - name: Import Vault Secrets
         id: vault
         uses: hashicorp/vault-action@v3.1.0
