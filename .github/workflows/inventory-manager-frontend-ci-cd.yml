@@ -10,7 +10,7 @@ on:
     branches: [ main, pipeline ]
     paths:
       - 'inventory-manager/app/frontend/**'
-  workflow_dispatch:                    # ← manual trigger with inputs
+  workflow_dispatch:
     inputs:
       terraform_action:
         description: 'Terraform Action'
@@ -28,13 +28,13 @@ on:
         type: choice
         options:
           - pi-cluster
-          - k8s-cluster 
+          - k8s-cluster
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: naidu72/inventory-frontend
   VAULT_ADDR: https://vault.naidu72.info
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true  
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 permissions:
   contents: read
@@ -42,7 +42,7 @@ permissions:
 
 jobs:
   test:
-    runs-on: [self-hosted, pi5]
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
@@ -136,13 +136,16 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/pipeline')
+    if: |
+      (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/pipeline')) ||
+      github.event_name == 'workflow_dispatch'
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.2.2
         with:
           ref: pipeline
+
       - name: Import Vault Secrets
         id: vault
         uses: hashicorp/vault-action@v3.1.0
@@ -166,8 +169,7 @@ jobs:
           kubectl config current-context || true
 
       - name: Set Terraform variables
-        run: |
-          echo "TF_VAR_ghcr_username=naidu72" >> $GITHUB_ENV
+        run: echo "TF_VAR_ghcr_username=naidu72" >> $GITHUB_ENV
 
       - name: Verify Terraform
         run: |
@@ -194,7 +196,7 @@ jobs:
             -out=tfplan
 
       - name: Terraform Apply
-        if: github.event.inputs.terraform_action != 'plan-only'
+        if: github.event.inputs.terraform_action != 'plan-only' && github.event.inputs.terraform_action != 'destroy'
         working-directory: inventory-manager/terraform/environments/pi-cluster
         env:
           AWS_ACCESS_KEY_ID: ${{ steps.vault.outputs.AWS_ACCESS_KEY_ID }}
@@ -203,27 +205,22 @@ jobs:
 
       - name: Terraform Destroy
         if: github.event.inputs.terraform_action == 'destroy'
-
-            -out=tfplan
-
-      - name: Terraform Apply
-
         working-directory: inventory-manager/terraform/environments/pi-cluster
         env:
           AWS_ACCESS_KEY_ID: ${{ steps.vault.outputs.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ steps.vault.outputs.AWS_SECRET_ACCESS_KEY }}
-        run: terraform destroy -auto-approve \
+        run: |
+          terraform destroy -auto-approve \
             -var="kubeconfig_path=/home/naidu/.kube/config" \
             -var="kubeconfig_context=pi-k3s"
 
-        run: terraform apply -auto-approve tfplan  
       - name: Wait for deployment
+        if: github.event.inputs.terraform_action != 'plan-only' && github.event.inputs.terraform_action != 'destroy'
         run: |
           kubectl wait --for=condition=ready pod \
             -l app=inventory-manager-frontend \
             -n inventory-manager \
             --timeout=300s
-
 
       - name: Verify deployment
         run: |
@@ -231,9 +228,8 @@ jobs:
           kubectl get ingress -n inventory-manager
 
       - name: Test application endpoint
+        if: github.event.inputs.terraform_action != 'plan-only' && github.event.inputs.terraform_action != 'destroy'
         run: |
           sleep 10
           curl -f https://inventory-pi.naidu72.info/ || exit 1
           echo "✅ Application is accessible"
-
-

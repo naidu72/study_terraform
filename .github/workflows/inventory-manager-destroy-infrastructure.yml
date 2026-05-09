@@ -16,6 +16,7 @@ on:
 
 env:
   VAULT_ADDR: https://vault.naidu72.info
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 permissions:
   contents: read
@@ -29,16 +30,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.2.2
-
-      - name: Debug OIDC token
-        run: |
-          TOKEN=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "$ACTIONS_ID_TOKEN_REQUEST_URL" | jq -r '.value')
-          echo "$TOKEN" | cut -d. -f2 | base64 -d 2>/dev/null | jq .
+        with:
+          ref: pipeline
 
       - name: Import Vault Secrets
-        uses: hashicorp/vault-action@v3.1.0
         id: vault
+        uses: hashicorp/vault-action@v3.1.0
         with:
           url: ${{ env.VAULT_ADDR }}
           method: jwt
@@ -59,21 +56,29 @@ jobs:
           kubectl config current-context || true
 
       - name: Set Terraform variables
-        run: |
-          echo "TF_VAR_ghcr_username=naidu72" >> $GITHUB_ENV
+        run: echo "TF_VAR_ghcr_username=naidu72" >> $GITHUB_ENV
 
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v3.1.2
-        with:
-          terraform_version: 1.7.0
+      - name: Verify Terraform
+        run: |
+          which terraform
+          terraform --version
 
       - name: Terraform Init
         working-directory: inventory-manager/terraform/environments/${{ inputs.environment }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ steps.vault.outputs.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ steps.vault.outputs.AWS_SECRET_ACCESS_KEY }}
         run: terraform init
 
       - name: Terraform Destroy
         working-directory: inventory-manager/terraform/environments/${{ inputs.environment }}
-        run: terraform destroy -auto-approve
+        env:
+          AWS_ACCESS_KEY_ID: ${{ steps.vault.outputs.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ steps.vault.outputs.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          terraform destroy -auto-approve \
+            -var="kubeconfig_path=/home/naidu/.kube/config" \
+            -var="kubeconfig_context=pi-k3s"
 
       - name: Verify destruction
         run: |
@@ -86,9 +91,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Environment**: ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Status**: ✅ Infrastructure destroyed" >> $GITHUB_STEP_SUMMARY
-          echo "- **State**: Preserved in MinIO (s3://terraform-state/inventory-manager/${{ inputs.environment }}/terraform.tfstate)" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "⚠️ **Note**: Terraform state file is preserved in MinIO for recovery." >> $GITHUB_STEP_SUMMARY
+          echo "- **State**: Preserved in MinIO" >> $GITHUB_STEP_SUMMARY
 
   abort:
     runs-on: ubuntu-latest
