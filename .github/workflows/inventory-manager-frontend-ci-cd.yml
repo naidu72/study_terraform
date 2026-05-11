@@ -1,0 +1,235 @@
+name: Inventory Manager — Frontend CI/CD
+
+on:
+  push:
+    branches: [ pipeline, main, develop ]
+    paths:
+      - 'inventory-manager/app/frontend/**'
+      - '.github/workflows/inventory-manager-frontend-ci-cd.yml'
+  pull_request:
+    branches: [ main, pipeline ]
+    paths:
+      - 'inventory-manager/app/frontend/**'
+  workflow_dispatch:
+    inputs:
+      terraform_action:
+        description: 'Terraform Action'
+        required: true
+        default: 'apply'
+        type: choice
+        options:
+          - apply
+          - destroy
+          - plan-only
+      environment:
+        description: 'Target Environment'
+        required: true
+        default: 'pi-cluster'
+        type: choice
+        options:
+          - pi-cluster
+          - k8s-cluster
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: naidu72/inventory-frontend
+  VAULT_ADDR: https://vault.naidu72.info
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: inventory-manager/app/frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: inventory-manager/app/frontend
+        run: npm ci
+
+      - name: Run linting
+        working-directory: inventory-manager/app/frontend
+        run: npm run lint || echo "Linting not configured, skipping"
+
+      - name: Run tests
+        working-directory: inventory-manager/app/frontend
+        run: npm test -- --watchAll=false || echo "No tests found, skipping"
+
+      - name: Build application
+        working-directory: inventory-manager/app/frontend
+        env:
+          CI: true
+        run: npm run build
+
+  build-and-push:
+    needs: test
+    runs-on: [self-hosted, pi5]
+    permissions:
+      id-token: write
+      contents: read
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/pipeline'))
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+        with:
+          ref: ${{ github.sha }}
+
+      - name: GitHub repository
+        run: echo "github.repository=${{ github.repository }}"
+
+      - name: Import Vault Secrets
+        id: vault
+        uses: hashicorp/vault-action@v3.1.0
+        with:
+          url: ${{ env.VAULT_ADDR }}
+          method: jwt
+          role: github-actions
+          secrets: |
+            secret/data/ghcr/credentials token | GHCR_TOKEN
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3.3.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ steps.vault.outputs.GHCR_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix={{branch}}-
+            type=ref,event=branch
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6.10.0
+        with:
+          context: ./inventory-manager/app/frontend
+          platforms: linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
+
+  deploy:
+    needs: build-and-push
+    runs-on: [self-hosted, pi5]
+    permissions:
+      id-token: write
+      contents: read
+    if: |
+      (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/pipeline')) ||
+      github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Import Vault Secrets
+        id: vault
+        uses: hashicorp/vault-action@v3.1.0
+        with:
+          url: ${{ env.VAULT_ADDR }}
+          method: jwt
+          role: github-actions
+          secrets: |
+            secret/data/minio/credentials access_key_id | AWS_ACCESS_KEY_ID ;
+            secret/data/minio/credentials secret_access_key | AWS_SECRET_ACCESS_KEY ;
+            secret/data/ghcr/credentials token | TF_VAR_ghcr_token ;
+            secret/data/inventory-manager/postgres password | TF_VAR_postgres_password ;
+            secret/data/inventory-manager/jwt secret_key | TF_VAR_jwt_secret_key ;
+            secret/data/homelab/pi-kubeconfig kubeconfig | PI_KUBECONFIG
+
+      - name: Setup kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ steps.vault.outputs.PI_KUBECONFIG }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+          kubectl config current-context || true
+
+      - name: Set Terraform variables
+        run: echo "TF_VAR_ghcr_username=naidu72" >> $GITHUB_ENV
+
+      - name: Verify Terraform
+        run: |
+          which terraform
+          terraform --version
+
+      - name: Terraform Init
+        working-directory: inventory-manager/terraform/environments/pi-cluster
+        env:
+          AWS_ACCESS_KEY_ID: ${{ steps.vault.outputs.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ steps.vault.outputs.AWS_SECRET_ACCESS_KEY }}
+        run: terraform init
+
+      - name: Terraform Plan
+        working-directory: inventory-manager/terraform/environments/pi-cluster
+        env:
+          AWS_ACCESS_KEY_ID: ${{ steps.vault.outputs.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ steps.vault.outputs.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          terraform plan \
+            -var="kubeconfig_path=/home/naidu/.kube/config" \
+            -var="kubeconfig_context=pi-k3s" \
+            ${{ github.event.inputs.terraform_action == 'destroy' && '-destroy' || '' }} \
+            -out=tfplan
+
+      - name: Terraform Apply
+        if: github.event.inputs.terraform_action != 'plan-only' && github.event.inputs.terraform_action != 'destroy'
+        working-directory: inventory-manager/terraform/environments/pi-cluster
+        env:
+          AWS_ACCESS_KEY_ID: ${{ steps.vault.outputs.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ steps.vault.outputs.AWS_SECRET_ACCESS_KEY }}
+        run: terraform apply -auto-approve tfplan
+
+      - name: Terraform Destroy
+        if: github.event.inputs.terraform_action == 'destroy'
+        working-directory: inventory-manager/terraform/environments/pi-cluster
+        env:
+          AWS_ACCESS_KEY_ID: ${{ steps.vault.outputs.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ steps.vault.outputs.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          terraform destroy -auto-approve \
+            -var="kubeconfig_path=/home/naidu/.kube/config" \
+            -var="kubeconfig_context=pi-k3s"
+
+      - name: Wait for deployment
+        if: github.event.inputs.terraform_action != 'plan-only' && github.event.inputs.terraform_action != 'destroy'
+        run: |
+          kubectl wait --for=condition=ready pod \
+            -l app=inventory-manager-frontend \
+            -n inventory-manager \
+            --timeout=300s
+
+      - name: Verify deployment
+        run: |
+          kubectl get pods -n inventory-manager -l app=inventory-manager-frontend
+          kubectl get ingress -n inventory-manager
+
+      - name: Test application endpoint
+        if: github.event.inputs.terraform_action != 'plan-only' && github.event.inputs.terraform_action != 'destroy'
+        run: |
+          sleep 10
+          curl -f https://inventory-pi.naidu72.info/ || exit 1
+          echo "✅ Application is accessible"

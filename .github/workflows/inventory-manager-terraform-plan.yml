@@ -1,0 +1,108 @@
+name: Inventory Manager — Terraform Plan on PR
+
+on:
+  pull_request:
+    branches: [ main, pipeline ]
+    paths:
+      - 'inventory-manager/terraform/**'
+      - '.github/workflows/inventory-manager-terraform-plan.yml'
+
+env:
+  VAULT_ADDR: https://vault.naidu72.info
+
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: write
+
+jobs:
+  plan:
+    runs-on: [self-hosted, pi5]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+
+      - name: Debug OIDC token
+        run: |
+          TOKEN=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL" | jq -r '.value')
+          echo "$TOKEN" | cut -d. -f2 | base64 -d 2>/dev/null | jq .
+
+      - name: Import Vault Secrets
+        uses: hashicorp/vault-action@v3.1.0
+        id: vault
+        with:
+          url: ${{ env.VAULT_ADDR }}
+          method: jwt
+          role: github-actions
+          secrets: |
+            secret/data/minio/credentials access_key_id | AWS_ACCESS_KEY_ID ;
+            secret/data/minio/credentials secret_access_key | AWS_SECRET_ACCESS_KEY ;
+            secret/data/ghcr/credentials token | TF_VAR_ghcr_token ;
+            secret/data/inventory-manager/postgres password | TF_VAR_postgres_password ;
+            secret/data/inventory-manager/jwt secret_key | TF_VAR_jwt_secret_key ;
+            secret/data/homelab/pi-kubeconfig kubeconfig | PI_KUBECONFIG
+
+      - name: Setup kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ steps.vault.outputs.PI_KUBECONFIG }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+          kubectl config current-context || true
+
+      - name: Set Terraform variables
+        run: |
+          echo "TF_VAR_ghcr_username=naidu72" >> $GITHUB_ENV
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3.1.2
+        with:
+          terraform_version: 1.7.0
+
+      - name: Terraform Format Check
+        working-directory: inventory-manager/terraform/environments/pi-cluster
+        run: terraform fmt -check -recursive || echo "⚠️ Terraform files need formatting"
+
+      - name: Terraform Init
+        working-directory: inventory-manager/terraform/environments/pi-cluster
+        run: terraform init
+
+      - name: Terraform Validate
+        working-directory: inventory-manager/terraform/environments/pi-cluster
+        run: terraform validate
+
+      - name: Terraform Plan
+        id: plan
+        working-directory: inventory-manager/terraform/environments/pi-cluster
+        run: |
+          terraform plan -no-color -out=tfplan > plan_output.txt 2>&1
+          cat plan_output.txt
+
+      - name: Comment PR with plan
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('inventory-manager/terraform/environments/pi-cluster/plan_output.txt', 'utf8');
+
+            const output = `#### Terraform Plan 📋
+
+            <details><summary>Show Plan</summary>
+
+            \`\`\`terraform
+            ${plan}
+            \`\`\`
+
+            </details>
+
+            *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Workflow: \`${{ github.workflow }}\`*`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            });

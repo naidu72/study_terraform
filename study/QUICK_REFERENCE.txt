@@ -1,0 +1,102 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                                                                              ║
+║              GitHub Actions Pipeline - Quick Reference Card                  ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+📍 REPOSITORY:
+   https://github.com/naidu72/study_terraform
+
+🔐 SECRETS PAGE:
+   https://github.com/naidu72/study_terraform/settings/secrets/actions
+
+📊 ACTIONS PAGE:
+   https://github.com/naidu72/study_terraform/actions
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚀 SETUP STEPS:
+
+1. Get SSH Key:
+   cd /home/frontier/terraform/study_terraform
+   .github/show-ssh-key.sh
+
+2. Add 4 Secrets at GitHub (see SECRETS PAGE above):
+   • AWS_ACCESS_KEY_ID = admin
+   • AWS_SECRET_ACCESS_KEY = password
+   • PI_HOST = pi
+   • PI_SSH_PRIVATE_KEY = (from step 1)
+
+3. Push to GitHub:
+   git add .
+   git commit -m "Add GitHub Actions CI/CD pipeline"
+   git push origin main
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 DOCUMENTATION FILES:
+
+START HERE:
+  • SETUP_INSTRUCTIONS.md              Main setup guide
+
+DETAILED GUIDES:
+  • .github/SETUP_SECRETS_MANUAL.md    Manual secrets setup
+  • .github/QUICKSTART.md              5-minute quick start
+  • CICD_README.md                     Quick reference
+
+REFERENCE:
+  • .github/workflows/README.md        Complete pipeline docs
+  • .github/MANUAL_DEPLOYMENT.md       Manual deployment
+  • .github/PIPELINE_SUMMARY.md        Architecture details
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔧 USEFUL COMMANDS:
+
+# Get SSH key for GitHub
+.github/show-ssh-key.sh
+
+# Test SSH to Pi
+ssh naidu@pi "echo 'SSH works!'"
+
+# Check MinIO
+curl http://localhost:9000/minio/health/live
+
+# Validate Terraform
+terraform validate
+
+# View workflow runs (if gh CLI works)
+gh run list --repo naidu72/study_terraform
+
+# Watch latest run
+gh run watch --repo naidu72/study_terraform
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ VERIFICATION:
+
+After deployment, check resources:
+
+WSL:
+  docker ps --filter "label=managed_by=terraform"
+
+Pi:
+  ssh naidu@pi "docker ps --filter 'label=managed_by=terraform'"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 WORKSPACES:
+
+• pi  → ssh://naidu@pi
+• wsl → unix:///mnt/wsl/shared-docker/docker.sock
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📝 NEXT STEP:
+
+Run: .github/show-ssh-key.sh
+
+Then add secrets at:
+https://github.com/naidu72/study_terraform/settings/secrets/actions
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
