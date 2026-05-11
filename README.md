@@ -387,20 +387,41 @@ resource "aws_instance" "app" {
 ```
 
 #### count
+
+> **Live Kubernetes example** → [study/k8s/learning/main.tf](study/k8s/learning/main.tf) — `kubernetes_pod.alpine_worker`
+> **Deep dive** → [count vs for_each — Hands-On with Alpine Pods](#count-vs-for_each--hands-on-with-alpine-pods)
+
+`count` creates N **identical** copies of a resource addressed by **index** (0, 1, 2…).
+
 ```hcl
 resource "aws_instance" "server" {
-  count = 3
+  count = 3   # creates server[0], server[1], server[2]
   
   ami           = "ami-0c55b159cbfafe1f0"
   instance_type = "t2.micro"
   
   tags = {
-    Name = "Server-${count.index}"
+    Name = "Server-${count.index}"   # count.index = 0, 1, 2
   }
 }
+
+# Access one:  aws_instance.server[0].public_ip
+# Access all:  aws_instance.server[*].public_ip  → ["ip0", "ip1", "ip2"]
 ```
 
+**When to use count:**
+- All instances are interchangeable (identical worker nodes, replicas)
+- On/off toggle: `count = var.enable_feature ? 1 : 0`
+
+**Danger zone:** Removing an item from the *middle* of a list shifts indexes and can trigger unwanted recreations. Use `for_each` for items with distinct identities.
+
 #### for_each
+
+> **Live Kubernetes example** → [study/k8s/learning/main.tf](study/k8s/learning/main.tf) — `kubernetes_pod.alpine_named`
+> **Deep dive** → [count vs for_each — Hands-On with Alpine Pods](#count-vs-for_each--hands-on-with-alpine-pods)
+
+`for_each` iterates over a **map** (or `set(string)`) and addresses each resource by its **key**. Removing a key only destroys that one resource — nothing else shifts.
+
 ```hcl
 variable "instances" {
   type = map(object({
@@ -408,28 +429,31 @@ variable "instances" {
     instance_type = string
   }))
   default = {
-    web = {
-      ami           = "ami-0c55b159cbfafe1f0"
-      instance_type = "t2.micro"
-    }
-    app = {
-      ami           = "ami-0c55b159cbfafe1f0"
-      instance_type = "t2.small"
-    }
+    web = { ami = "ami-0c55b159cbfafe1f0", instance_type = "t2.micro" }
+    app = { ami = "ami-0c55b159cbfafe1f0", instance_type = "t2.small" }
   }
 }
 
 resource "aws_instance" "servers" {
-  for_each = var.instances
+  for_each = var.instances   # creates servers["web"], servers["app"]
   
-  ami           = each.value.ami
+  ami           = each.value.ami            # each.value = the object for this key
   instance_type = each.value.instance_type
   
   tags = {
-    Name = "${each.key}-server"
+    Name = "${each.key}-server"   # each.key = "web" or "app"
   }
 }
+
+# Access one:  aws_instance.servers["web"].public_ip
+# Access all:  { for k, v in aws_instance.servers : k => v.public_ip }
+#              → { "web" = "ip_web", "app" = "ip_app" }
 ```
+
+**When to use for_each:**
+- Instances have distinct identities or different configurations
+- You may need to add or remove specific items without touching others
+- The input is naturally a map (e.g., per-service config)
 
 #### lifecycle
 ```hcl
@@ -3700,6 +3724,161 @@ stages:
             inputs:
               command: 'apply'
               commandOptions: 'tfplan'
+```
+
+---
+
+## count vs for_each — Hands-On with Alpine Pods
+
+> **Live example**: [study/k8s/learning/](study/k8s/learning/)
+> Run `terraform init && terraform apply` in that directory to deploy the pods.
+
+### The Core Problem count Has
+
+`count` gives each resource an **index** (0, 1, 2). This is fragile when you remove items from the middle:
+
+```
+Before: ["web", "api", "batch"]   → pod[0]=web  pod[1]=api  pod[2]=batch
+Remove "api":
+After:  ["web", "batch"]          → pod[0]=web  pod[1]=batch
+                                           ↑           ↑
+                                       unchanged   RECREATED (was batch, index shifted)
+```
+
+Terraform sees index 1 changed from `api` to `batch` and **destroys + recreates** the batch pod even though you only wanted to remove the api pod.
+
+### How for_each Fixes It
+
+`for_each` uses a **key** (string) as the stable identity instead of a position:
+
+```
+Before: { web=..., api=..., batch=... }  → pod["web"]  pod["api"]  pod["batch"]
+Remove "api":
+After:  { web=...,          batch=... }  → pod["web"]              pod["batch"]
+                                                ↑                        ↑
+                                            unchanged               unchanged  ✅
+```
+
+Only the `api` pod is destroyed. Everything else is untouched.
+
+### count — When to Use It
+
+```hcl
+# ✅ Good: identical worker nodes — interchangeable, number is all that matters
+resource "kubernetes_pod" "alpine_worker" {
+  count = var.worker_count   # creates pods[0], pods[1], pods[2]
+
+  metadata {
+    name      = "alpine-worker-${count.index}"   # count.index = 0, 1, 2...
+    namespace = "terraform-learning"
+  }
+  spec {
+    container {
+      name    = "alpine"
+      image   = "alpine:3.19"
+      command = ["sh", "-c", "echo Worker ${count.index} && sleep 3600"]
+    }
+  }
+}
+
+# Access specific pod:     kubernetes_pod.alpine_worker[0]
+# Access all pod names:    kubernetes_pod.alpine_worker[*].metadata[0].name
+# → ["alpine-worker-0", "alpine-worker-1", "alpine-worker-2"]
+```
+
+```hcl
+# ✅ Also good: on/off toggle (count = 0 or 1)
+resource "kubernetes_config_map" "demo_info" {
+  count = var.worker_count > 0 ? 1 : 0   # only exists when workers are running
+  # ...
+}
+```
+
+### for_each — When to Use It
+
+```hcl
+variable "named_pods" {
+  type = map(object({
+    command     = list(string)
+    environment = string
+  }))
+  default = {
+    "web"   = { command = ["sh", "-c", "sleep 3600"], environment = "frontend" }
+    "api"   = { command = ["sh", "-c", "sleep 3600"], environment = "backend"  }
+    "batch" = { command = ["sh", "-c", "sleep 3600"], environment = "worker"   }
+  }
+}
+
+resource "kubernetes_pod" "alpine_named" {
+  for_each = var.named_pods   # iterates over the map
+
+  metadata {
+    name   = "alpine-${each.key}"              # each.key   = "web", "api", "batch"
+    labels = { environment = each.value.environment }  # each.value = the object for this key
+  }
+  spec {
+    container {
+      name    = "alpine"
+      image   = "alpine:3.19"
+      command = each.value.command             # each pod gets its own command
+      env {
+        name  = "POD_ROLE"
+        value = each.key
+      }
+    }
+  }
+}
+
+# Access specific pod:       kubernetes_pod.alpine_named["web"]
+# Access all as a map:       { for k, pod in kubernetes_pod.alpine_named : k => pod.metadata[0].name }
+# → { "web" = "alpine-web", "api" = "alpine-api", "batch" = "alpine-batch" }
+```
+
+### Output Differences
+
+```hcl
+# count → outputs a LIST (ordered, indexed)
+output "count_pod_names" {
+  value = kubernetes_pod.alpine_worker[*].metadata[0].name
+  # ["alpine-worker-0", "alpine-worker-1", "alpine-worker-2"]
+}
+
+# for_each → outputs a MAP (keyed, unordered)
+output "foreach_pod_names" {
+  value = { for k, pod in kubernetes_pod.alpine_named : k => pod.metadata[0].name }
+  # { "api" = "alpine-api", "batch" = "alpine-batch", "web" = "alpine-web" }
+}
+```
+
+### Cheat Sheet
+
+| | `count` | `for_each` |
+|---|---|---|
+| Input type | `number` | `map` or `set(string)` |
+| Access key | `count.index` (0, 1, 2…) | `each.key`, `each.value` |
+| Resource address | `resource.name[0]` | `resource.name["key"]` |
+| Splat output | `resource.name[*].attr` → list | `for k, v in resource.name : k => v.attr` → map |
+| Safe to remove middle item? | ❌ Shifts indexes, may recreate others | ✅ Only the keyed item is destroyed |
+| Best for | Identical replicas, on/off toggle | Items with distinct identities or configs |
+
+### Experiment: See the Problem Live
+
+```bash
+cd study/k8s/learning
+terraform init
+terraform apply          # creates 3 workers + 3 named pods
+
+# Now open variables.tf and change named_pods to remove "api"
+# Then run:
+terraform plan           # see that only alpine-api is destroyed
+                         # alpine-web and alpine-batch are UNCHANGED
+
+# Compare: change worker_count from 3 to 2
+terraform plan           # see that alpine-worker-2 is destroyed (end of list, safe)
+
+# Dangerous count scenario:
+# Change worker_count back to 3, then change the list order:
+# Terraform would recreate pods at shifted indexes
 ```
 
 ---
