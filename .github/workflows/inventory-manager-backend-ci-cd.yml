@@ -152,18 +152,22 @@ jobs:
 
       - name: Import Vault Secrets
         id: vault
-        uses: hashicorp/vault-action@v3.1.0
+        uses: Wandalen/wretry.action@v3
         with:
-          url: ${{ env.VAULT_ADDR }}
-          method: jwt
-          role: github-actions
-          secrets: |
-            secret/data/minio/credentials access_key_id | AWS_ACCESS_KEY_ID ;
-            secret/data/minio/credentials secret_access_key | AWS_SECRET_ACCESS_KEY ;
-            secret/data/ghcr/credentials token | TF_VAR_ghcr_token ;
-            secret/data/inventory-manager/postgres password | TF_VAR_postgres_password ;
-            secret/data/inventory-manager/jwt secret_key | TF_VAR_jwt_secret_key ;
-            secret/data/homelab/pi-kubeconfig kubeconfig | PI_KUBECONFIG
+          action: hashicorp/vault-action@v3.1.0
+          attempt_limit: 3
+          attempt_delay: 15000
+          with: |
+            url: ${{ env.VAULT_ADDR }}
+            method: jwt
+            role: github-actions
+            secrets: |
+              secret/data/minio/credentials access_key_id | AWS_ACCESS_KEY_ID ;
+              secret/data/minio/credentials secret_access_key | AWS_SECRET_ACCESS_KEY ;
+              secret/data/ghcr/credentials token | TF_VAR_ghcr_token ;
+              secret/data/inventory-manager/postgres password | TF_VAR_postgres_password ;
+              secret/data/inventory-manager/jwt secret_key | TF_VAR_jwt_secret_key ;
+              secret/data/homelab/pi-kubeconfig kubeconfig | PI_KUBECONFIG
 
       - name: Setup kubeconfig
         run: |
