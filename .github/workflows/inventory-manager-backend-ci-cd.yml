@@ -89,7 +89,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/pipeline')
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/pipeline'))
 
     steps:
       - name: Checkout code
@@ -144,7 +144,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/pipeline')
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/pipeline'))
 
     steps:
       - name: Checkout code

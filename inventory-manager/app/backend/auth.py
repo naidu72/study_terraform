@@ -9,6 +9,9 @@ from database import get_db
 from models import User
 from schemas import TokenData
 from config import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/login")
@@ -41,9 +44,15 @@ def authenticate_user(db: Session, username: str, password: str) -> Optional[Use
     """Authenticate user with username and password"""
     user = db.query(User).filter(User.username == username).first()
     if not user:
+        logger.warning("Login failed — username not found: '%s'", username)
         return None
     if not verify_password(password, user.hashed_password):
+        logger.warning("Login failed — wrong password for user: '%s'", username)
         return None
+    if not user.is_active:
+        logger.warning("Login failed — inactive account for user: '%s'", username)
+        return None
+    logger.info("Login successful for user: '%s' (role=%s)", username, user.role)
     return user
 
 
