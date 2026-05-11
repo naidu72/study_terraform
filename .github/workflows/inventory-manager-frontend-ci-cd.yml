@@ -103,7 +103,7 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ steps.vault.outputs.GHCR_TOKEN }}
+          password: ${{ env.GHCR_TOKEN }}
 
       - name: Extract metadata
         id: meta
@@ -160,7 +160,7 @@ jobs:
       - name: Setup kubeconfig
         run: |
           mkdir -p ~/.kube
-          echo "${{ steps.vault.outputs.PI_KUBECONFIG }}" | base64 -d > ~/.kube/config
+          echo "${{ env.PI_KUBECONFIG }}" | base64 -d > ~/.kube/config
           chmod 600 ~/.kube/config
           kubectl config current-context || true
 
@@ -176,15 +176,15 @@ jobs:
       - name: Terraform Init
         working-directory: inventory-manager/terraform/environments/pi-cluster
         env:
-          AWS_ACCESS_KEY_ID: ${{ steps.vault.outputs.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ steps.vault.outputs.AWS_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
         run: terraform init
 
       - name: Terraform Plan
         working-directory: inventory-manager/terraform/environments/pi-cluster
         env:
-          AWS_ACCESS_KEY_ID: ${{ steps.vault.outputs.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ steps.vault.outputs.AWS_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
         run: |
           terraform plan \
             -var="kubeconfig_path=/home/naidu/.kube/config" \
@@ -196,16 +196,16 @@ jobs:
         if: github.event.inputs.terraform_action != 'plan-only'
         working-directory: inventory-manager/terraform/environments/pi-cluster
         env:
-          AWS_ACCESS_KEY_ID: ${{ steps.vault.outputs.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ steps.vault.outputs.AWS_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
         run: terraform apply -auto-approve tfplan
 
       - name: Terraform Destroy
         if: github.event.inputs.terraform_action == 'destroy'
         working-directory: inventory-manager/terraform/environments/pi-cluster
         env:
-          AWS_ACCESS_KEY_ID: ${{ steps.vault.outputs.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ steps.vault.outputs.AWS_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
         run: terraform destroy -auto-approve \
             -var="kubeconfig_path=/home/naidu/.kube/config" \
             -var="kubeconfig_context=pi-k3s"
