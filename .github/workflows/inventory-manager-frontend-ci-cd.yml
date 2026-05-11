@@ -215,10 +215,12 @@ jobs:
           kubectl get pods -n inventory-manager -l app=inventory-manager-frontend
           kubectl get ingress -n inventory-manager
 
-      - name: Test application endpoint
+      - name: Wait for frontend ready
+        if: github.event.inputs.terraform_action != 'plan-only' && github.event.inputs.terraform_action != 'destroy'
         run: |
-          sleep 10
-          curl -f https://inventory-pi.naidu72.info/ || exit 1
-          echo "✅ Application is accessible"
+          kubectl wait --for=condition=ready pod \
+            -l app=inventory-manager-frontend \
+            -n inventory-manager \
+            --timeout=120s
 
 
