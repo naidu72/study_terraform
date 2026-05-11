@@ -1,11 +1,29 @@
-# ── count demo ────────────────────────────────────────────────────
-# How many identical alpine pods to spin up.
-# Try changing this to 2 and re-applying — Terraform only adds/removes
-# from the end. No existing pods are touched.
+# ── count demo (simple number) ────────────────────────────────────
 variable "worker_count" {
   description = "Number of identical alpine worker pods (count demo)"
   type        = number
   default     = 3
+}
+
+# ── count demo (list — shows the INDEX SHIFTING problem) ──────────
+#
+# EXPERIMENT: remove "api" from this list, then run: terraform plan
+# You will see:
+#   alpine-list-0 (web)   → No changes       ✓
+#   alpine-list-1 (api)   → destroy + replace ← was "api", now sees "batch"
+#   alpine-list-2 (batch) → destroy           ← index 2 no longer exists
+#
+# Terraform does NOT know about names — it only sees indexes.
+# Index 1 changed from "api" config to "batch" config → recreate.
+# Index 2 is gone → destroy.
+# Result: 2 destroys + 1 recreate, even though you only removed 1 item!
+#
+# COMPARE: do the same with named_pods (for_each) below.
+# Only "api" is destroyed. web and batch are never touched.
+variable "list_pods" {
+  description = "Ordered list of pod roles (demonstrates count index-shifting problem)"
+  type        = list(string)
+  default     = ["web", "api", "batch"]
 }
 
 # ── for_each demo ─────────────────────────────────────────────────

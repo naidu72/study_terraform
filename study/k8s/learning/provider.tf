@@ -8,6 +8,6 @@ terraform {
 }
 
 provider "kubernetes" {
-  config_path    = "~/.kube/config"
+  config_path    = "~/.kube/pi-cluster"
   config_context = "pi-k8s"
 }

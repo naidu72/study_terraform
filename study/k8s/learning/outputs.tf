@@ -1,3 +1,15 @@
+# ── list-based count: shows index → role mapping ──────────────────
+output "list_pod_index_mapping" {
+  description = "Shows which role lives at which index (the fragile part)"
+  value = {
+    for i, pod in kubernetes_pod.alpine_list :
+    "index_${i}" => pod.metadata[0].labels.role
+  }
+  # Result: { "index_0" = "web", "index_1" = "api", "index_2" = "batch" }
+  # Remove "api" from list_pods → index_1 becomes "batch", index_2 gone
+  # Terraform REPLACES index_1 and DESTROYS index_2 — 2 operations for 1 removal
+}
+
 # ── count outputs: use [*] splat or [index] ───────────────────────
 output "count_pod_names" {
   description = "Names of all count-based worker pods"

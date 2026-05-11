@@ -65,6 +65,59 @@ resource "kubernetes_pod" "alpine_worker" {
   }
 }
 
+# ── EXAMPLE 1b: count over a LIST (shows index-shifting danger) ───
+#
+# This uses var.list_pods = ["web", "api", "batch"]
+# count = length(list) creates pods at index 0, 1, 2
+#
+# ┌─────────────────────────────────────────────────────────────────┐
+# │  EXPERIMENT — Run this to feel the problem:                     │
+# │                                                                 │
+# │  Step 1: terraform apply   (creates web=0, api=1, batch=2)      │
+# │  Step 2: In variables.tf, remove "api" from list_pods           │
+# │          list_pods = ["web", "batch"]                           │
+# │  Step 3: terraform plan                                         │
+# │                                                                 │
+# │  Expected (wrong) result you will see:                          │
+# │    alpine-list-0 → no changes     (web at index 0, unchanged)   │
+# │    alpine-list-1 → REPLACE        (index 1 was api, now batch)  │
+# │    alpine-list-2 → DESTROY        (index 2 gone)                │
+# │                                                                 │
+# │  You removed 1 pod but Terraform does 2 operations!             │
+# │  Now do the same with for_each (named_pods) and compare.        │
+# └─────────────────────────────────────────────────────────────────┘
+#
+resource "kubernetes_pod" "alpine_list" {
+  count = length(var.list_pods)
+
+  metadata {
+    name      = "alpine-list-${count.index}"
+    namespace = kubernetes_namespace.learning.metadata[0].name
+    labels = {
+      app      = "alpine-list"
+      role     = var.list_pods[count.index] # the value at this index
+      index    = tostring(count.index)
+      demo     = "count-list-problem"
+    }
+  }
+
+  spec {
+    restart_policy = "Never"
+
+    container {
+      name  = "alpine"
+      image = "alpine:3.19"
+      # prints which role this index currently holds
+      command = ["sh", "-c", "echo \"Index ${count.index} = role: ${var.list_pods[count.index]}\" && sleep 3600"]
+
+      resources {
+        requests = { cpu = "10m", memory = "16Mi" }
+        limits   = { cpu = "50m", memory = "32Mi" }
+      }
+    }
+  }
+}
+
 # ── EXAMPLE 2: for_each ───────────────────────────────────────────
 #
 # for_each iterates over a map (or set of strings).
