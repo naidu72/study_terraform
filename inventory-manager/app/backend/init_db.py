@@ -13,11 +13,11 @@ def init_database():
 def create_users(db):
     print("\nCreating users...")
     users = [
-        User(username="admin", email="admin@inventory.local", full_name="System Administrator",
+        User(username="admin", email="admin@example.com", full_name="System Administrator",
              role="admin", hashed_password=get_password_hash("admin123"), is_active=1),
-        User(username="manager1", email="manager@inventory.local", full_name="Inventory Manager",
+        User(username="manager1", email="manager@example.com", full_name="Inventory Manager",
              role="manager", hashed_password=get_password_hash("manager123"), is_active=1),
-        User(username="viewer1", email="viewer@inventory.local", full_name="Inventory Viewer",
+        User(username="viewer1", email="viewer@example.com", full_name="Inventory Viewer",
              role="viewer", hashed_password=get_password_hash("viewer123"), is_active=1),
     ]
     for user in users:
