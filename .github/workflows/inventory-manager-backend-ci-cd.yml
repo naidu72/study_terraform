@@ -51,7 +51,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4.2.2
         with:
-          ref: pipeline
+          ref: ${{ github.sha }}
       - name: Verify Python
         run: |
           python3 --version
@@ -90,13 +90,13 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/pipeline')
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/pipeline'))
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.2.2
         with:
-          ref: pipeline
+          ref: ${{ github.sha }}
       - name: GitHub repository
         run: echo "github.repository=${{ github.repository }}"
 
@@ -146,14 +146,13 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/pipeline')
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/pipeline'))
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.2.2
-
         with:
-          ref: pipeline
+          ref: ${{ github.sha }}
       - name: Import Vault Secrets
         id: vault
         uses: hashicorp/vault-action@v3.1.0

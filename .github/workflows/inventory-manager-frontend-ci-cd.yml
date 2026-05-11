@@ -48,7 +48,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4.2.2
         with:
-          ref: pipeline
+          ref: ${{ github.sha }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -81,13 +81,13 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/pipeline')
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/pipeline'))
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.2.2
         with:
-          ref: pipeline
+          ref: ${{ github.sha }}
 
       - name: GitHub repository
         run: echo "github.repository=${{ github.repository }}"
@@ -144,7 +144,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4.2.2
         with:
-          ref: pipeline
+          ref: ${{ github.sha }}
 
       - name: Import Vault Secrets
         id: vault
