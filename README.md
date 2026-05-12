@@ -1,5 +1,34 @@
 # Terraform Complete Learning Guide - End to End
 
+---
+
+## My Learning Journey — Pi Cluster Practice Log
+
+> Branch: `learn/terraform-journey` | Cluster: Pi k3s | State: MinIO (`terraform-state` bucket)
+> All live examples: [study/k8s/learning/](study/k8s/learning/)
+
+| Phase | Topic | Directory | Status | Key Command Run |
+|-------|-------|-----------|--------|-----------------|
+| 1 | count vs for_each | [01-count-foreach/](study/k8s/learning/) | ✅ Done | `kubectl get pods -n terraform-learning` |
+| 2 | Variables deep dive | [02-variables/](study/k8s/learning/02-variables/) | 🔜 Next | — |
+| 3 | Locals | [03-locals/](study/k8s/learning/03-locals/) | ⏳ Pending | — |
+| 4 | Data Sources | [04-datasources/](study/k8s/learning/04-datasources/) | ⏳ Pending | — |
+| 5 | Lifecycle rules | [05-lifecycle/](study/k8s/learning/05-lifecycle/) | ⏳ Pending | — |
+| 6 | Workspaces | [06-workspaces/](study/k8s/learning/06-workspaces/) | ⏳ Pending | — |
+| 7 | Functions & expressions | [07-functions/](study/k8s/learning/07-functions/) | ⏳ Pending | — |
+
+### What I Learned
+
+**Phase 1 — count vs for_each**
+- `count` uses an index (0,1,2) — removing middle item shifts indexes and recreates resources
+- `for_each` uses a key ("web","api") — removing a key only destroys that one resource
+- `count = 0 or 1` is the standard toggle pattern for optional resources
+- Terraform is **declarative** — it reconciles desired vs actual state (manually deleted pod gets recreated)
+- Remote state lives in MinIO at `s3://terraform-state/learning/count-foreach/terraform.tfstate`
+- Cloudflare Tunnel breaks SigV4 because it drops `Content-Length` header — use NodePort IP for Terraform backends
+
+---
+
 ## Table of Contents
 1. [Introduction to Terraform](#introduction-to-terraform)
 2. [Installation and Setup](#installation-and-setup)
