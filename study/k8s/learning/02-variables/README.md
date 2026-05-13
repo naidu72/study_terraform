@@ -296,7 +296,12 @@ Whenever you have a choice, prefer keys over indexes.
 | `object({})` | Structured config, each field can differ in type |
 
 ---
-
+```
+variable "db_password" {
+  type      = string
+  sensitive = true    ← value hidden in plan/apply output, shown as (sensitive value)
+}
+```
 ## What's Next — Lesson 3: Locals
 
 **Problem this solves:**
