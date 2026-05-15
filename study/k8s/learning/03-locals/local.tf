@@ -3,7 +3,7 @@ locals {
   namespce_name = "${local.name_prefix}-${var.app}"
   common_labels = {
     team = var.team
-    environment = var.environment
+    environment = "stage"
     manged_by = "terraform"
   }
 }
