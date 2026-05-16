@@ -266,6 +266,117 @@ With 10+ modules, grouped outputs are much easier to read.
 
 ---
 
+## Module Inputs — Strict Contract
+
+A module only accepts what its `variables.tf` declares. Passing anything else is an error.
+
+```hcl
+module "app_namespace" {
+  source      = "./modules/namespace"
+  name        = "lesson7-app"
+  owner       = "naidu72"    ← ERROR: module has no variable named "owner"
+}
+```
+
+```
+Error: Unsupported argument
+  An argument named "owner" is not expected here.
+```
+
+---
+
+## Adding Extra Labels from Root — `merge()` Pattern
+
+By default the module has 3 fixed labels (`team`, `environment`, `managed_by`).
+To allow callers to inject additional labels without hardcoding them in the module,
+use the `merge()` + `extra_labels` pattern.
+
+**Step 1 — add to `modules/namespace/variables.tf`:**
+
+```hcl
+variable "extra_labels" {
+  type    = map(string)
+  default = {}    ← empty by default, caller doesn't have to pass it
+}
+```
+
+**Step 2 — update `modules/namespace/main.tf`:**
+
+```hcl
+labels = merge(
+  {
+    team        = var.team
+    environment = var.environment
+    managed_by  = "terraform"
+  },
+  var.extra_labels    ← merged on top — caller's labels added to the fixed ones
+)
+```
+
+**Step 3 — root `main.tf` can now pass extra labels:**
+
+```hcl
+module "app_namespace" {
+  source       = "./modules/namespace"
+  name         = "lesson7-app"
+  team         = "backend"
+  environment  = "qa"
+  extra_labels = {
+    owner       = "naidu72"
+    cost_center = "platform-001"
+  }
+}
+```
+
+**Result on the cluster:**
+```
+labels:
+  team        = "backend"
+  environment = "qa"
+  managed_by  = "terraform"
+  owner       = "naidu72"         ← injected from root
+  cost_center = "platform-001"    ← injected from root
+```
+
+`merge()` combines both maps. If a key exists in both, the second map wins.
+This is the standard pattern in real Terraform modules for flexible label passing.
+
+---
+
+## Root Module Has Its Own variables.tf and locals.tf
+
+The root module is just another Terraform module — it can have its own
+`variables.tf` and `locals.tf` completely independent from child modules.
+
+```
+root/variables.tf              ← root inputs (from -var, tfvars, CI/CD)
+root/locals.tf                 ← root computed values
+root/main.tf                   ← uses var.* and local.* to call child modules
+
+modules/namespace/variables.tf ← module inputs (passed via module block)
+modules/namespace/locals.tf    ← module's own private computed values
+```
+
+**These are NOT shared automatically.** Values must be passed explicitly:
+
+```hcl
+# root/locals.tf
+locals {
+  env = "qa"
+}
+
+# root/main.tf
+module "app_namespace" {
+  source      = "./modules/namespace"
+  environment = local.env    ← explicitly passed, child module never sees local.env directly
+}
+```
+
+The child module only sees `var.environment = "qa"` — it never has access to
+the root's `local.env`. Every value crosses the boundary through module inputs.
+
+---
+
 ## Connection to inventory-manager
 
 The `inventory-manager` you reviewed at the start of this journey uses exactly this pattern:
