@@ -12,8 +12,6 @@ data "terraform_remote_state" "lesson9" {
     skip_requesting_account_id  = true
     use_path_style              = true
     workspace_key_prefix        = ""
-    access_key = "terraform-user"
-    secret_key = "TerraformState2024"
   }
 }
 
