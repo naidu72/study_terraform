@@ -2,18 +2,20 @@ name: GA-01 - Hello World
 
 on:
   push:
-   paths:
-    - '.github/workflows/learning/ga-01-hello.yml'
+    paths:
+      - '.github/workflows/learning/ga-01-hello.yml'
+
 jobs:
   hello:
     runs-on: ubuntu-latest
 
     steps:
-     - name: Say Hello
-       run: echo "Hello from Github Actions!"
-     - name: Show some context    
-       run: |
-        echo "Branch: ${{ github.ref_name }}"
-        echo "Commit: ${{github.sha }}"
-        echo "Actor: ${{github.actor }} "
-        echo "Event: ${{github.event_name}}"
+      - name: Say Hello
+        run: echo "Hello from GitHub Actions!"
+
+      - name: Show some context
+        run: |
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Actor:  ${{ github.actor }}"
+          echo "Event:  ${{ github.event_name }}"
