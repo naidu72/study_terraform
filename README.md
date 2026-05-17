@@ -7,25 +7,65 @@
 > Branch: `learn/terraform-journey` | Cluster: Pi k3s | State: MinIO (`terraform-state` bucket)
 > All live examples: [study/k8s/learning/](study/k8s/learning/)
 
-| Phase | Topic | Directory | Status | Key Command Run |
-|-------|-------|-----------|--------|-----------------|
-| 1 | count vs for_each | [01-count-foreach/](study/k8s/learning/) | ✅ Done | `kubectl get pods -n terraform-learning` |
-| 2 | Variables deep dive | [02-variables/](study/k8s/learning/02-variables/) | 🔜 Next | — |
-| 3 | Locals | [03-locals/](study/k8s/learning/03-locals/) | ⏳ Pending | — |
-| 4 | Data Sources | [04-datasources/](study/k8s/learning/04-datasources/) | ⏳ Pending | — |
-| 5 | Lifecycle rules | [05-lifecycle/](study/k8s/learning/05-lifecycle/) | ⏳ Pending | — |
-| 6 | Workspaces | [06-workspaces/](study/k8s/learning/06-workspaces/) | ⏳ Pending | — |
-| 7 | Functions & expressions | [07-functions/](study/k8s/learning/07-functions/) | ⏳ Pending | — |
+### README Topics Coverage
 
-### What I Learned
+| # | README Topic | Covered In | Status |
+|---|---|---|---|
+| 1 | Introduction to Terraform | Lesson 00 discussions | ✅ Done |
+| 2 | Installation and Setup | Pre-existing setup | ✅ Done |
+| 3 | Core Concepts | [00-first-steps](study/k8s/learning/00-first-steps/) | ✅ Done |
+| 4 | Configuration Language (HCL) | All lessons | ✅ Done |
+| 5 | Providers | [00-first-steps](study/k8s/learning/00-first-steps/) | ✅ Done |
+| 6 | Resources | [00-first-steps](study/k8s/learning/00-first-steps/) | ✅ Done |
+| 7 | Variables and Outputs | [02-variables](study/k8s/learning/02-variables/) + [06-outputs](study/k8s/learning/06-outputs/) | ✅ Done |
+| 8 | Data Sources | [04-datasources](study/k8s/learning/04-datasources/) | ✅ Done |
+| 9 | State Management | [00-first-steps](study/k8s/learning/00-first-steps/) + [09-remote-state](study/k8s/learning/09-remote-state/) | ✅ Done |
+| 10 | Modules | [07-modules](study/k8s/learning/07-modules/) | ✅ Done |
+| 11 | Provisioners | Not covered — generally avoided in modern Terraform | ⏭ Skipped |
+| 12 | Backends | [09-remote-state](study/k8s/learning/09-remote-state/) | ✅ Done |
+| 13 | Workspaces | [08-workspaces](study/k8s/learning/08-workspaces/) | ✅ Done |
+| 14 | Functions and Expressions | [07-functions](study/k8s/learning/07-functions/) + [10-dynamic-blocks](study/k8s/learning/10-dynamic-blocks/) | ✅ Done |
+| 15 | Terraform Commands | All lessons | ✅ Done |
+| 16 | Best Practices | Throughout all lessons | ✅ Done |
+| 17 | Advanced Topics | [11-validation](study/k8s/learning/11-validation/) + [12-remote-state-consumer](study/k8s/learning/12-remote-state-consumer/) | ✅ Done |
+| 18 | Real-World Examples | inventory-manager review + all hands-on lessons | ✅ Done |
+| 19 | Troubleshooting | Through live errors — SigV4, workspace prefix, drift | ✅ Done |
+| 20 | CI/CD Integration | GitHub Actions — **next lesson** | 🔜 Next |
 
-**Phase 1 — count vs for_each**
-- `count` uses an index (0,1,2) — removing middle item shifts indexes and recreates resources
-- `for_each` uses a key ("web","api") — removing a key only destroys that one resource
-- `count = 0 or 1` is the standard toggle pattern for optional resources
-- Terraform is **declarative** — it reconciles desired vs actual state (manually deleted pod gets recreated)
-- Remote state lives in MinIO at `s3://terraform-state/learning/count-foreach/terraform.tfstate`
-- Cloudflare Tunnel breaks SigV4 because it drops `Content-Length` header — use NodePort IP for Terraform backends
+### Hands-On Lessons Completed
+
+| Lesson | Topic | Directory | README | Status |
+|--------|-------|-----------|--------|--------|
+| 00 | Resources, State, Drift, Import | [00-first-steps](study/k8s/learning/00-first-steps/) | [README](study/k8s/learning/00-first-steps/README.md) | ✅ Done |
+| 01 | count vs for_each | [01-count-foreach](study/k8s/learning/01-count-foreach/) | [README](study/k8s/learning/01-count-foreach/README.md) | ✅ Done |
+| 02 | Variables, Types, tfvars | [02-variables](study/k8s/learning/02-variables/) | [README](study/k8s/learning/02-variables/README.md) | ✅ Done |
+| 03 | Locals | [03-locals](study/k8s/learning/03-locals/) | [README](study/k8s/learning/03-locals/README.md) | ✅ Done |
+| 04 | Data Sources | [04-datasources](study/k8s/learning/04-datasources/) | [README](study/k8s/learning/04-datasources/README.md) | ✅ Done |
+| 05 | Lifecycle Rules | [05-lifecycle](study/k8s/learning/05-lifecycle/) | [README](study/k8s/learning/05-lifecycle/README.md) | ✅ Done |
+| 06 | Outputs + Sensitive Values | [06-outputs](study/k8s/learning/06-outputs/) | [README](study/k8s/learning/06-outputs/README.md) | ✅ Done |
+| 07 | Modules | [07-modules](study/k8s/learning/07-modules/) | [README](study/k8s/learning/07-modules/README.md) | ✅ Done |
+| A | Functions + depends_on | [07-functions](study/k8s/learning/07-functions/) | [README](study/k8s/learning/07-functions/README.md) | ✅ Done |
+| 08 | Workspaces | [08-workspaces](study/k8s/learning/08-workspaces/) | [README](study/k8s/learning/08-workspaces/README.md) | ✅ Done |
+| 09 | Remote State Backend (MinIO) | [09-remote-state](study/k8s/learning/09-remote-state/) | [README](study/k8s/learning/09-remote-state/README.md) | ✅ Done |
+| C | Dynamic Blocks + for expressions | [10-dynamic-blocks](study/k8s/learning/10-dynamic-blocks/) | [README](study/k8s/learning/10-dynamic-blocks/README.md) | ✅ Done |
+| D | Variable Validation | [11-validation](study/k8s/learning/11-validation/) | [README](study/k8s/learning/11-validation/README.md) | ✅ Done |
+| E | terraform_remote_state | [12-remote-state-consumer](study/k8s/learning/12-remote-state-consumer/) | [README](study/k8s/learning/12-remote-state-consumer/README.md) | ✅ Done |
+| 20 | CI/CD Integration — GitHub Actions | _coming next_ | — | 🔜 Next |
+
+### Key Things Learned Along the Way
+
+- `count` uses index — removing middle item shifts everything below it and recreates resources
+- `for_each` uses keys — removing a key only destroys that one resource
+- `count = 0 or 1` is the standard toggle pattern for conditional resources
+- Terraform is **declarative** — it reconciles desired vs actual state
+- Cloudflare Tunnel drops `Content-Length` header → SigV4 signature mismatch → use NodePort IP directly
+- `workspace_key_prefix = ""` required to avoid `env:/` prefix that MinIO can't list
+- `sensitive = true` is masking only — value still visible via `terraform output <name>` and in state file
+- Locals do NOT override variables — they compose new values from variables
+- Module encapsulation — only `outputs.tf` values are accessible from outside a module
+- `terraform console` — fastest way to explore outputs and test functions interactively
+- `depends_on` only needed when no reference exists between resources
+- `terraform_remote_state` reads another project's outputs — only declared outputs are accessible
 
 ---
 
