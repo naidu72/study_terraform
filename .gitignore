@@ -11,3 +11,8 @@ backends/
 # Crash logs
 crash.log
 crash.*.log
+
+# Act Runner — secrets locais
+.secrets
+.env.local
+.env.production
