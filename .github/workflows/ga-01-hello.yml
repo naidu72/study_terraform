@@ -4,7 +4,7 @@ on:
   workflow_dispatch:    # manual trigger — run from GitHub UI anytime
   push:
     paths:
-      - '.github/workflows/learning/ga-01-hello.yml'
+      - '.github/workflows/ga-01-hello.yml'
 
 jobs:
   hello:
