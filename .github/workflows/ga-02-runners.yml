@@ -1,0 +1,36 @@
+name: GA-02 - Runners
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'learn/**'
+    paths:
+      - '.github/workflows/ga-02-runners.yml'
+
+jobs:
+  github-hosted:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Who am I?
+        run: |
+          echo "Runner OS:   ${{ runner.os }}"
+          echo "Runner name: ${{ runner.name }}"
+          echo "Hostname:    $(hostname)"
+          echo "User:        $(whoami)"
+          echo "CPU:         $(nproc) cores"
+          echo "Memory:      $(free -h | awk '/Mem/{print $2}')"
+          echo "Disk:        $(df -h / | awk 'NR==2{print $4}') free"
+
+  self-hosted:
+    runs-on: [self-hosted, pi5]
+    steps:
+      - name: Who am I?
+        run: |
+          echo "Runner OS:   ${{ runner.os }}"
+          echo "Runner name: ${{ runner.name }}"
+          echo "Hostname:    $(hostname)"
+          echo "User:        $(whoami)"
+          echo "CPU:         $(nproc) cores"
+          echo "Memory:      $(free -h | awk '/Mem/{print $2}')"
+          echo "Disk:        $(df -h / | awk 'NR==2{print $4}') free"

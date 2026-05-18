@@ -1,8 +1,10 @@
 name: GA-01 - Hello World
 
 on:
-  workflow_dispatch:    # manual trigger — run from GitHub UI anytime
+  workflow_dispatch:    # manual trigger — run from GitHub UI anytime (default branch only)
   push:
+    branches:
+      - 'learn/**'      # trigger on any learn/* branch push
     paths:
       - '.github/workflows/ga-01-hello.yml'
 
